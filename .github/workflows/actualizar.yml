@@ -29,31 +29,33 @@ jobs:
           headers = {"Authorization": "Bearer " + WRIKE_TOKEN}
 
           print("Consultando Wrike...")
+
+          # CONTACTOS — sin filtro de "active" porque Wrike no lo devuelve
           r = requests.get("https://www.wrike.com/api/v4/contacts", headers=headers)
-          raw = r.json()
-          all_contacts = raw.get("data", [])
-          print(">>> HTTP status contacts:", r.status_code)
-          print(">>> Total contactos sin filtro:", len(all_contacts))
-          if all_contacts:
-              c0 = all_contacts[0]
-              print(">>> Ejemplo contacto:", c0.get("primaryEmail","(sin email)"), "| type:", c0.get("type",""), "| active:", c0.get("active",""), "| deleted:", c0.get("deleted",""))
-          else:
-              print(">>> Respuesta raw:", str(raw)[:300])
+          all_contacts = r.json().get("data", [])
+          print("Total contactos sin filtro:", len(all_contacts))
 
           contacts = [c for c in all_contacts
-                      if not c.get("deleted") and c.get("type") == "Person"
-                      and "@netsoft.com" in c.get("primaryEmail","") and c.get("active")]
+                      if not c.get("deleted")
+                      and c.get("type") == "Person"
+                      and "@netsoft.com" in c.get("primaryEmail","")]
 
-          r2 = requests.get('https://www.wrike.com/api/v4/folders?project=true&fields=["project","members"]', headers=headers)
-          print(">>> HTTP status projects:", r2.status_code)
+          # PROYECTOS — fields como params separados para evitar error 400
+          r2 = requests.get(
+              "https://www.wrike.com/api/v4/folders",
+              headers=headers,
+              params={"project": "true", "fields": '["project","members"]'}
+          )
+          print("HTTP projects:", r2.status_code)
           all_projects = r2.json().get("data", [])
-          print(">>> Total proyectos sin filtro:", len(all_projects))
+          print("Total proyectos sin filtro:", len(all_projects))
+
           projects = [p for p in all_projects
                       if p.get("project")
                       and p["project"].get("status","").lower() not in ["completed","cancelled","onhold"]
                       and p["project"].get("startDate") and p["project"].get("endDate")]
 
-          print("  " + str(len(contacts)) + " contactos, " + str(len(projects)) + " proyectos (despues de filtros)")
+          print(str(len(contacts)) + " contactos, " + str(len(projects)) + " proyectos (despues de filtros)")
 
           owner_ids = set()
           for p in projects:
@@ -123,7 +125,6 @@ jobs:
 
           MARKER_START = "// GANTT_DATA_START"
           MARKER_END   = "// GANTT_DATA_END"
-
           start = html.find(MARKER_START)
           end   = html.find(MARKER_END)
 
