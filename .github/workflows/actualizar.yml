@@ -28,57 +28,23 @@ jobs:
           WRIKE_TOKEN = os.environ["WRIKE_TOKEN"]
           headers = {"Authorization": "Bearer " + WRIKE_TOKEN}
 
-          print("Consultando Wrike...")
-
-          # PASO 1 — Contactos @netsoft.com
-          r = requests.get("https://www.wrike.com/api/v4/contacts", headers=headers)
-          all_contacts = r.json().get("data", [])
-          contacts = [c for c in all_contacts
-                      if not c.get("deleted")
-                      and c.get("type") == "Person"
-                      and "@netsoft.com" in c.get("primaryEmail","")]
-          print("Contactos netsoft:", len(contacts))
-          cid_to_contact = {c["id"]: c for c in contacts}
-
-          # PASO 2 — Tareas/proyectos dentro de PROYECTOS ACTIVOS
           FOLDER_ID = "IEAEDUQVIS53CPQR"
 
-          # Intentar como tasks primero
-          r2 = requests.get(
-              "https://www.wrike.com/api/v4/folders/" + FOLDER_ID + "/tasks",
-              headers=headers,
-              params={"fields": '["customFields","assignees","superTaskIds"]', "pageSize": 100}
+          # Ver qué tiene esta carpeta directamente
+          r = requests.get(
+              "https://www.wrike.com/api/v4/folders/" + FOLDER_ID,
+              headers=headers
           )
-          print("HTTP tasks:", r2.status_code)
-          tasks_data = r2.json().get("data", [])
-          print("Tasks encontradas:", len(tasks_data))
-
-          # También intentar como subfolders con descendants
-          r3 = requests.get(
-              "https://www.wrike.com/api/v4/folders",
-              headers=headers,
-              params={"descendants": "true", "fields": '["project","members","customFields"]'}
-          )
-          print("HTTP all folders with descendants:", r3.status_code)
-          all_f = r3.json().get("data", [])
-          print("Total folders con descendants:", len(all_f))
-
-          # Buscar la carpeta padre y sus hijos
-          parent = None
-          children = []
-          for f in all_f:
-              if f["id"] == FOLDER_ID:
-                  parent = f
-              if FOLDER_ID in f.get("parentIds",[]):
-                  children.append(f)
-
-          print("Carpeta padre encontrada:", parent is not None)
-          print("Hijos directos:", len(children))
-          if children:
-              print("Ejemplo hijo:", children[0].get("title"), "| project:", bool(children[0].get("project")))
-          if parent:
-              print("Parent childIds:", len(parent.get("childIds",[])))
-              print("Parent keys:", list(parent.keys()))
+          print("HTTP folder directo:", r.status_code)
+          data = r.json().get("data", [])
+          if data:
+              f = data[0]
+              print("Title:", f.get("title"))
+              print("childIds count:", len(f.get("childIds",[])))
+              print("childIds:", f.get("childIds",[])[:5])
+              print("Todas las keys:", list(f.keys()))
+          else:
+              print("Respuesta:", str(r.json())[:300])
 
           PYEOF
 
