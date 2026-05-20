@@ -21,147 +21,105 @@ jobs:
         env:
           WRIKE_TOKEN: ${{ secrets.WRIKE_TOKEN }}
         run: |
-          python3 << 'PYEOF'
+          python3 - << 'PYEOF'
           import os, requests, re
           from datetime import datetime
 
           WRIKE_TOKEN = os.environ["WRIKE_TOKEN"]
-          headers = {"Authorization": f"Bearer {WRIKE_TOKEN}"}
+          headers = {"Authorization": "Bearer " + WRIKE_TOKEN}
 
           print("Consultando Wrike...")
-
-          # Contactos Netsoft México
           r = requests.get("https://www.wrike.com/api/v4/contacts", headers=headers)
           contacts = [c for c in r.json().get("data", [])
-                      if not c.get("deleted")
-                      and c.get("type") == "Person"
-                      and "@netsoft.com" in c.get("primaryEmail","")
-                      and c.get("active")]
+                      if not c.get("deleted") and c.get("type") == "Person"
+                      and "@netsoft.com" in c.get("primaryEmail","") and c.get("active")]
 
-          # Proyectos activos con fechas
-          r2 = requests.get(
-              'https://www.wrike.com/api/v4/folders?project=true&fields=["project","members"]',
-              headers=headers)
+          r2 = requests.get('https://www.wrike.com/api/v4/folders?project=true&fields=["project","members"]', headers=headers)
           projects = [p for p in r2.json().get("data", [])
                       if p.get("project")
                       and p["project"].get("status","").lower() not in ["completed","cancelled","onhold"]
-                      and p["project"].get("startDate")
-                      and p["project"].get("endDate")]
+                      and p["project"].get("startDate") and p["project"].get("endDate")]
 
-          print(f"  {len(contacts)} contactos, {len(projects)} proyectos")
+          print("  " + str(len(contacts)) + " contactos, " + str(len(projects)) + " proyectos")
 
-          # Owners = gerentes
           owner_ids = set()
           for p in projects:
               for oid in p.get("project",{}).get("ownerIds",[]):
                   owner_ids.add(oid)
 
-          # Filtrar solo México (emails @netsoft.com con timezone México)
-          contact_list = []
-          for c in contacts:
-              name = (c.get("firstName","") + " " + c.get("lastName","")).upper().strip()
-              if not name.strip(): continue
-              tz = c.get("timezone","")
-              if "Mexico" not in tz and "America/Mexico" not in tz:
-                  continue
-              contact_list.append({
-                  "id": c["id"],
-                  "name": name,
-                  "role": "GERENTE" if c["id"] in owner_ids else "CONSULTOR"
-              })
-
-          # Si no hay suficientes con filtro de timezone, usar todos los de netsoft.com MX
+          # Solo México por timezone
+          contact_list = [c for c in contacts if "Mexico" in c.get("timezone","") or "America/Mexico" in c.get("timezone","")]
           if len(contact_list) < 10:
-              contact_list = []
-              for c in contacts:
-                  name = (c.get("firstName","") + " " + c.get("lastName","")).upper().strip()
-                  if not name.strip(): continue
-                  contact_list.append({
-                      "id": c["id"],
-                      "name": name,
-                      "role": "GERENTE" if c["id"] in owner_ids else "CONSULTOR"
-                  })
+              contact_list = contacts
 
-          COLORS = ['#1d4ed8','#0e7490','#0f766e','#1e6b55','#4338ca','#6d28d9',
-                    '#7c3aed','#2563eb','#0284c7','#0369a1','#1a6b8a','#164e63',
-                    '#065f46','#0d5c6e','#1e40af','#3b5998','#5a2d82','#6b21a8','#374151']
+          final_contacts = []
+          for c in contact_list:
+              name = (c.get("firstName","") + " " + c.get("lastName","")).upper().strip()
+              if name:
+                  final_contacts.append({"id": c["id"], "name": name, "role": "GERENTE" if c["id"] in owner_ids else "CONSULTOR"})
 
-          project_list = []
+          COLORS = ['#1d4ed8','#0e7490','#0f766e','#1e6b55','#4338ca','#6d28d9','#7c3aed','#2563eb','#0284c7','#0369a1','#1a6b8a','#164e63','#065f46','#0d5c6e','#1e40af','#3b5998','#5a2d82','#6b21a8','#374151']
+          final_projects = []
           for i, p in enumerate(projects[:25]):
               proj = p.get("project", {})
-              project_list.append({
-                  "name": p["title"],
-                  "start": proj.get("startDate","2025-01-01"),
-                  "end": proj.get("endDate","2026-12-31"),
-                  "color": COLORS[i % len(COLORS)],
-                  "owner_ids": proj.get("ownerIds",[]),
-                  "member_ids": [m["id"] for m in p.get("members",[])]
-              })
+              final_projects.append({"name": p["title"], "start": proj.get("startDate","2025-01-01"), "end": proj.get("endDate","2026-12-31"), "color": COLORS[i % len(COLORS)], "owner_ids": proj.get("ownerIds",[]), "member_ids": [m["id"] for m in p.get("members",[])]})
 
-          cid_to_idx = {c["id"]: i for i, c in enumerate(contact_list)}
+          cid_to_idx = {c["id"]: i for i, c in enumerate(final_contacts)}
 
-          # Construir JS de datos
-          res_js = "[\n" + ",\n".join(
-              f"    ['{c['name'].replace(chr(39), chr(92)+chr(39))}','{c['role']}','{'#1a3354' if c['role']=='GERENTE' else '#2563eb'}']"
-              for c in contact_list
-          ) + "\n  ]"
+          res_lines = []
+          for c in final_contacts:
+              color = "#1a3354" if c["role"] == "GERENTE" else "#2563eb"
+              name = c["name"].replace("'", "\\'")
+              res_lines.append("    ['" + name + "','" + c["role"] + "','" + color + "']")
 
-          proj_js = "[\n" + ",\n".join(
-              f"    ['{p['name'].replace(chr(39), chr(92)+chr(39))}','{p['start']}','{p['end']}','{p['color']}']"
-              for p in project_list
-          ) + "\n  ]"
+          proj_lines = []
+          for p in final_projects:
+              name = p["name"].replace("'", "\\'")
+              proj_lines.append("    ['" + name + "','" + p["start"] + "','" + p["end"] + "','" + p["color"] + "']")
 
           assign_lines = []
-          for pi, p in enumerate(project_list):
+          for pi, p in enumerate(final_projects):
               added = set()
               for oid in p["owner_ids"]:
                   if oid in cid_to_idx and oid not in added:
-                      assign_lines.append(f"    [{cid_to_idx[oid]},{pi},'{p['start']}','{p['end']}',50]")
+                      assign_lines.append("    [" + str(cid_to_idx[oid]) + "," + str(pi) + ",'" + p["start"] + "','" + p["end"] + "',50]")
                       added.add(oid)
               for mid in p["member_ids"]:
                   if mid in cid_to_idx and mid not in added:
-                      assign_lines.append(f"    [{cid_to_idx[mid]},{pi},'{p['start']}','{p['end']}',50]")
+                      assign_lines.append("    [" + str(cid_to_idx[mid]) + "," + str(pi) + ",'" + p["start"] + "','" + p["end"] + "',50]")
                       added.add(mid)
-
-          assign_js = "[\n" + ",\n".join(assign_lines) + "\n  ]"
 
           today = datetime.now().strftime("%B %Y")
 
-          new_init = f"""function init(){{
-            const RES={res_js};
-            RES.forEach(([n,role,color])=>addRes(n,role,color));
-            const PC=PROJ_COLORS;
-            const PROJ={proj_js};
-            PROJ.forEach(([n,s,e,color])=>addProj(n,s,e,color));
-            const A={assign_js};
-            A.forEach(([ri,pi,s,e,pct])=>addAssign(resources[ri].id,projects[pi].id,s,e,pct));
-            render();
-          }}"""
+          new_init = "function init(){\n  const RES=[\n" + ",\n".join(res_lines) + "\n  ];\n"
+          new_init += "  RES.forEach(([n,role,color])=>addRes(n,role,color));\n"
+          new_init += "  const PC=PROJ_COLORS;\n  const PROJ=[\n" + ",\n".join(proj_lines) + "\n  ];\n"
+          new_init += "  PROJ.forEach(([n,s,e,color])=>addProj(n,s,e,color));\n"
+          new_init += "  const A=[\n" + ",\n".join(assign_lines) + "\n  ];\n"
+          new_init += "  A.forEach(([ri,pi,s,e,pct])=>addAssign(resources[ri].id,projects[pi].id,s,e,pct));\n"
+          new_init += "  render();\n}"
 
-          # Leer HTML
           with open("index.html","r",encoding="utf-8") as f:
               html = f.read()
 
-          # Reemplazar init() — buscar inicio y fin exactos
-          start_marker = "function init(){"
-          end_marker = "\ninit();"
+          # Encontrar y reemplazar bloque init
+          start = html.find("function init(){")
+          end = html.find("\ninit();", start)
 
-          start_pos = html.find(start_marker)
-          end_pos = html.find(end_marker, start_pos)
-
-          if start_pos == -1 or end_pos == -1:
-              print("ERROR: No se encontró función init() en el HTML")
+          if start == -1 or end == -1:
+              print("ERROR: No se encontro funcion init()")
+              print("Buscando variantes...")
+              start = html.find("function init()")
+              print("Posicion encontrada: " + str(start))
               exit(1)
 
-          new_html = html[:start_pos] + new_init + html[end_pos:]
-
-          # Actualizar fecha
-          new_html = re.sub(r'Datos Wrike · [^<"]+', f'Datos Wrike · {today}', new_html)
+          new_html = html[:start] + new_init + html[end:]
+          new_html = re.sub(r'Datos Wrike · [^<"]+', 'Datos Wrike · ' + today, new_html)
 
           with open("index.html","w",encoding="utf-8") as f:
               f.write(new_html)
 
-          print(f"✅ Actualizado: {len(contact_list)} recursos, {len(project_list)} proyectos")
+          print("OK: " + str(len(final_contacts)) + " recursos, " + str(len(final_projects)) + " proyectos")
           PYEOF
 
       - name: Publicar cambios
