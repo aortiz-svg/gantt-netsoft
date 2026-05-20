@@ -91,35 +91,46 @@ jobs:
 
           today = datetime.now().strftime("%B %Y")
 
-          new_init = "function init(){\n  const RES=[\n" + ",\n".join(res_lines) + "\n  ];\n"
+          new_init  = "// GANTT_DATA_START\n"
+          new_init += "function init(){\n"
+          new_init += "  const RES=[\n" + ",\n".join(res_lines) + "\n  ];\n"
           new_init += "  RES.forEach(([n,role,color])=>addRes(n,role,color));\n"
-          new_init += "  const PC=PROJ_COLORS;\n  const PROJ=[\n" + ",\n".join(proj_lines) + "\n  ];\n"
+          new_init += "  const PC=PROJ_COLORS;\n"
+          new_init += "  const PROJ=[\n" + ",\n".join(proj_lines) + "\n  ];\n"
           new_init += "  PROJ.forEach(([n,s,e,color])=>addProj(n,s,e,color));\n"
           new_init += "  const A=[\n" + ",\n".join(assign_lines) + "\n  ];\n"
           new_init += "  A.forEach(([ri,pi,s,e,pct])=>addAssign(resources[ri].id,projects[pi].id,s,e,pct));\n"
-          new_init += "  render();\n}"
+          new_init += "  render();\n"
+          new_init += "}\n"
+          new_init += "init();\n"
+          new_init += "// GANTT_DATA_END"
 
           with open("index.html","r",encoding="utf-8") as f:
               html = f.read()
 
-          # Encontrar y reemplazar bloque init
-          start = html.find("function init(){")
-          end = html.find("\ninit();", start)
+          # Buscar marcadores
+          MARKER_START = "// GANTT_DATA_START"
+          MARKER_END   = "// GANTT_DATA_END"
+
+          start = html.find(MARKER_START)
+          end   = html.find(MARKER_END)
 
           if start == -1 or end == -1:
-              print("ERROR: No se encontro funcion init()")
-              print("Buscando variantes...")
-              start = html.find("function init()")
-              print("Posicion encontrada: " + str(start))
+              print("ERROR: No se encontraron los marcadores GANTT_DATA_START / GANTT_DATA_END en el HTML")
+              print("  Posicion START:", start)
+              print("  Posicion END:  ", end)
               exit(1)
 
-          new_html = html[:start] + new_init + html[end:]
+          # Reemplazar todo entre (e incluyendo) los marcadores
+          new_html = html[:start] + new_init + html[end + len(MARKER_END):]
+
+          # Actualizar el texto de fecha en el header
           new_html = re.sub(r'Datos Wrike · [^<"]+', 'Datos Wrike · ' + today, new_html)
 
           with open("index.html","w",encoding="utf-8") as f:
               f.write(new_html)
 
-          print("OK: " + str(len(final_contacts)) + " recursos, " + str(len(final_projects)) + " proyectos")
+          print("OK: " + str(len(final_contacts)) + " recursos, " + str(len(final_projects)) + " proyectos escritos en index.html")
           PYEOF
 
       - name: Publicar cambios
