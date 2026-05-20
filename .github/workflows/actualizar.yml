@@ -1,44 +1,46 @@
 name: Actualizar Gantt cada domingo
- 
+
 on:
   schedule:
     - cron: '0 16 * * 0'  # Domingos 10am hora México (UTC-6)
   workflow_dispatch:        # También permite correrlo manualmente con un clic
- 
+
 jobs:
   actualizar:
     runs-on: ubuntu-latest
     permissions:
       contents: write
- 
+
     steps:
       - uses: actions/checkout@v4
- 
+
       - name: Instalar dependencias
-        run: pip install requests anthropic
- 
+        run: pip install requests
+
       - name: Actualizar Gantt desde Wrike
         env:
           WRIKE_TOKEN: ${{ secrets.WRIKE_TOKEN }}
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
           python3 << 'PYEOF'
-          import os, requests, json
+          import os, requests, re, json
           from datetime import datetime
- 
+
           WRIKE_TOKEN = os.environ["WRIKE_TOKEN"]
-          ANTHROPIC_KEY = os.environ["ANTHROPIC_API_KEY"]
           headers = {"Authorization": f"Bearer {WRIKE_TOKEN}"}
- 
-          # 1. Traer contactos de Wrike
+
+          print("Consultando Wrike...")
+
+          # 1. Contactos Netsoft México
           r = requests.get("https://www.wrike.com/api/v4/contacts", headers=headers)
           all_contacts = r.json().get("data", [])
           contacts = [c for c in all_contacts
                       if not c.get("deleted")
                       and c.get("type") == "Person"
-                      and "@netsoft.com" in c.get("primaryEmail","")]
- 
-          # 2. Traer proyectos activos
+                      and "@netsoft.com" in c.get("primaryEmail","")
+                      and c.get("active")]
+          print(f"  {len(contacts)} contactos Netsoft")
+
+          # 2. Proyectos activos
           r2 = requests.get(
               'https://www.wrike.com/api/v4/folders?project=true&fields=["project","members"]',
               headers=headers)
@@ -46,14 +48,17 @@ jobs:
           projects = [p for p in all_projects
                       if p.get("project")
                       and p["project"].get("status","").lower()
-                      not in ["completed","cancelled","onhold"]]
- 
-          # 3. Armar listas limpias
+                      not in ["completed","cancelled","onhold"]
+                      and p["project"].get("startDate")]
+          print(f"  {len(projects)} proyectos activos")
+
+          # 3. IDs de owners (gerentes)
           owner_ids = set()
           for p in projects:
               for oid in p.get("project",{}).get("ownerIds",[]):
                   owner_ids.add(oid)
- 
+
+          # 4. Construir listas
           contact_list = []
           for c in contacts:
               name = (c.get("firstName","") + " " + c.get("lastName","")).upper().strip()
@@ -63,87 +68,85 @@ jobs:
                   "name": name,
                   "role": "GERENTE" if c["id"] in owner_ids else "CONSULTOR"
               })
- 
+
+          COLORS = ['#1d4ed8','#0e7490','#0f766e','#1e6b55','#4338ca','#6d28d9',
+                    '#7c3aed','#2563eb','#0284c7','#0369a1','#1a6b8a','#164e63',
+                    '#065f46','#0d5c6e','#1e40af','#3b5998','#5a2d82','#6b21a8','#374151']
+
           project_list = []
-          for p in projects[:30]:
+          for i, p in enumerate(projects[:30]):
               proj = p.get("project", {})
               project_list.append({
                   "name": p["title"],
                   "start": proj.get("startDate","2025-01-01"),
                   "end": proj.get("endDate","2026-12-31"),
+                  "color": COLORS[i % len(COLORS)],
                   "owner_ids": proj.get("ownerIds",[]),
                   "member_ids": [m["id"] for m in p.get("members",[])]
               })
- 
-          # 4. Leer HTML actual
-          with open("index.html","r",encoding="utf-8") as f:
-              html = f.read()
- 
+
           # 5. Construir nueva función init()
           today = datetime.now().strftime("%B %Y")
- 
+          cid_to_idx = {c["id"]: i for i, c in enumerate(contact_list)}
+
           res_lines = []
           for c in contact_list:
-              color = "'#1a3354'" if c["role"] == "GERENTE" else "'#2563eb'"
-              name = c["name"].replace("'","\\'")
-              res_lines.append(f"    ['{name}','{c['role']}',{color}]")
- 
+              color = "#1a3354" if c["role"] == "GERENTE" else "#2563eb"
+              name = c["name"].replace("'", "\\'")
+              res_lines.append(f"    ['{name}','{c['role']}','{color}']")
+
           proj_lines = []
-          colors = ['#1d4ed8','#0e7490','#0f766e','#1e6b55','#4338ca','#6d28d9','#7c3aed','#2563eb','#0284c7','#0369a1','#1a6b8a','#164e63','#065f46','#0d5c6e','#1e40af','#3b5998','#5a2d82','#6b21a8','#374151']
-          for i, p in enumerate(project_list):
-              name = p["name"].replace("'","\\'").replace('"','\\"')
-              color = colors[i % len(colors)]
-              proj_lines.append(f"    ['{name}','{p['start']}','{p['end']}','{color}']")
- 
-          # Mapas id→índice
-          cid_to_idx = {c["id"]: i for i, c in enumerate(contact_list)}
-          pid_to_idx = {i: i for i in range(len(project_list))}
- 
+          for p in project_list:
+              name = p["name"].replace("'", "\\'")
+              proj_lines.append(f"    ['{name}','{p['start']}','{p['end']}','{p['color']}']")
+
           assign_lines = []
           for pi, p in enumerate(project_list):
+              added = set()
               for oid in p["owner_ids"]:
-                  if oid in cid_to_idx:
-                      ci = cid_to_idx[oid]
-                      assign_lines.append(f"    [{ci},{pi},'{p['start']}','{p['end']}',50]")
+                  if oid in cid_to_idx and oid not in added:
+                      assign_lines.append(f"    [{cid_to_idx[oid]},{pi},'{p['start']}','{p['end']}',50]")
+                      added.add(oid)
               for mid in p["member_ids"]:
-                  if mid in cid_to_idx and mid not in p["owner_ids"]:
-                      ci = cid_to_idx[mid]
-                      assign_lines.append(f"    [{ci},{pi},'{p['start']}','{p['end']}',50]")
- 
-          new_init = f"""function init(){{
+                  if mid in cid_to_idx and mid not in added:
+                      assign_lines.append(f"    [{cid_to_idx[mid]},{pi},'{p['start']}','{p['end']}',50]")
+                      added.add(mid)
+
+          new_init = """function init(){
             const RES=[
-          {chr(10).join(res_lines)}
+          """ + ",\n".join(res_lines) + """
             ];
             RES.forEach(([n,role,color])=>addRes(n,role,color));
- 
             const PC=PROJ_COLORS;
             const PROJ=[
-          {chr(10).join(proj_lines)}
+          """ + ",\n".join(proj_lines) + """
             ];
             PROJ.forEach(([n,s,e,color])=>addProj(n,s,e,color));
- 
             const A=[
-          {chr(10).join(assign_lines)}
+          """ + ",\n".join(assign_lines) + """
             ];
             A.forEach(([ri,pi,s,e,pct])=>addAssign(resources[ri].id,projects[pi].id,s,e,pct));
             render();
-          }}"""
- 
-          # 6. Reemplazar init() y syncInfo en el HTML
-          import re
+          }"""
+
+          # 6. Reemplazar en el HTML
+          with open("index.html","r",encoding="utf-8") as f:
+              html = f.read()
+
           html = re.sub(r'function init\(\)\{.*?\}\s*\ninit\(\);',
                         new_init + '\n\ninit();',
                         html, flags=re.DOTALL)
-          html = re.sub(r'🔄 Datos Wrike · [^<]+',
+
+          html = re.sub(r'🔄 Datos Wrike · [^<"]+',
                         f'🔄 Datos Wrike · {today}', html)
- 
+
           with open("index.html","w",encoding="utf-8") as f:
               f.write(html)
- 
-          print(f"✅ Actualizado: {len(contact_list)} recursos, {len(project_list)} proyectos")
+
+          print(f"✅ Listo: {len(contact_list)} recursos, {len(project_list)} proyectos")
           PYEOF
- 
-      - name: Publicar cambios en GitHub
+
+      - name: Publicar cambios
         run: |
           git config user.name "github-actions"
           git config user.email "actions@github.com"
