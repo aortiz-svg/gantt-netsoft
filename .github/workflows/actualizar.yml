@@ -2,8 +2,8 @@ name: Actualizar Gantt cada domingo
 
 on:
   schedule:
-    - cron: '0 16 * * 0'  # Domingos 10am hora México (UTC-6)
-  workflow_dispatch:        # También permite correrlo manualmente con un clic
+    - cron: '0 16 * * 0'
+  workflow_dispatch:
 
 jobs:
   actualizar:
@@ -17,12 +17,12 @@ jobs:
       - name: Instalar dependencias
         run: pip install requests
 
-      - name: Actualizar Gantt desde Wrike
+      - name: Actualizar datos desde Wrike
         env:
           WRIKE_TOKEN: ${{ secrets.WRIKE_TOKEN }}
         run: |
           python3 << 'PYEOF'
-          import os, requests, re, json
+          import os, requests, re
           from datetime import datetime
 
           WRIKE_TOKEN = os.environ["WRIKE_TOKEN"]
@@ -30,51 +30,64 @@ jobs:
 
           print("Consultando Wrike...")
 
-          # 1. Contactos Netsoft México
+          # Contactos Netsoft México
           r = requests.get("https://www.wrike.com/api/v4/contacts", headers=headers)
-          all_contacts = r.json().get("data", [])
-          contacts = [c for c in all_contacts
+          contacts = [c for c in r.json().get("data", [])
                       if not c.get("deleted")
                       and c.get("type") == "Person"
                       and "@netsoft.com" in c.get("primaryEmail","")
                       and c.get("active")]
-          print(f"  {len(contacts)} contactos Netsoft")
 
-          # 2. Proyectos activos
+          # Proyectos activos con fechas
           r2 = requests.get(
               'https://www.wrike.com/api/v4/folders?project=true&fields=["project","members"]',
               headers=headers)
-          all_projects = r2.json().get("data", [])
-          projects = [p for p in all_projects
+          projects = [p for p in r2.json().get("data", [])
                       if p.get("project")
-                      and p["project"].get("status","").lower()
-                      not in ["completed","cancelled","onhold"]
-                      and p["project"].get("startDate")]
-          print(f"  {len(projects)} proyectos activos")
+                      and p["project"].get("status","").lower() not in ["completed","cancelled","onhold"]
+                      and p["project"].get("startDate")
+                      and p["project"].get("endDate")]
 
-          # 3. IDs de owners (gerentes)
+          print(f"  {len(contacts)} contactos, {len(projects)} proyectos")
+
+          # Owners = gerentes
           owner_ids = set()
           for p in projects:
               for oid in p.get("project",{}).get("ownerIds",[]):
                   owner_ids.add(oid)
 
-          # 4. Construir listas
+          # Filtrar solo México (emails @netsoft.com con timezone México)
           contact_list = []
           for c in contacts:
               name = (c.get("firstName","") + " " + c.get("lastName","")).upper().strip()
               if not name.strip(): continue
+              tz = c.get("timezone","")
+              if "Mexico" not in tz and "America/Mexico" not in tz:
+                  continue
               contact_list.append({
                   "id": c["id"],
                   "name": name,
                   "role": "GERENTE" if c["id"] in owner_ids else "CONSULTOR"
               })
 
+          # Si no hay suficientes con filtro de timezone, usar todos los de netsoft.com MX
+          if len(contact_list) < 10:
+              contact_list = []
+              for c in contacts:
+                  name = (c.get("firstName","") + " " + c.get("lastName","")).upper().strip()
+                  if not name.strip(): continue
+                  contact_list.append({
+                      "id": c["id"],
+                      "name": name,
+                      "role": "GERENTE" if c["id"] in owner_ids else "CONSULTOR"
+                  })
+
           COLORS = ['#1d4ed8','#0e7490','#0f766e','#1e6b55','#4338ca','#6d28d9',
                     '#7c3aed','#2563eb','#0284c7','#0369a1','#1a6b8a','#164e63',
                     '#065f46','#0d5c6e','#1e40af','#3b5998','#5a2d82','#6b21a8','#374151']
 
           project_list = []
-          for i, p in enumerate(projects[:30]):
+          for i, p in enumerate(projects[:25]):
               proj = p.get("project", {})
               project_list.append({
                   "name": p["title"],
@@ -85,20 +98,18 @@ jobs:
                   "member_ids": [m["id"] for m in p.get("members",[])]
               })
 
-          # 5. Construir nueva función init()
-          today = datetime.now().strftime("%B %Y")
           cid_to_idx = {c["id"]: i for i, c in enumerate(contact_list)}
 
-          res_lines = []
-          for c in contact_list:
-              color = "#1a3354" if c["role"] == "GERENTE" else "#2563eb"
-              name = c["name"].replace("'", "\\'")
-              res_lines.append(f"    ['{name}','{c['role']}','{color}']")
+          # Construir JS de datos
+          res_js = "[\n" + ",\n".join(
+              f"    ['{c['name'].replace(chr(39), chr(92)+chr(39))}','{c['role']}','{'#1a3354' if c['role']=='GERENTE' else '#2563eb'}']"
+              for c in contact_list
+          ) + "\n  ]"
 
-          proj_lines = []
-          for p in project_list:
-              name = p["name"].replace("'", "\\'")
-              proj_lines.append(f"    ['{name}','{p['start']}','{p['end']}','{p['color']}']")
+          proj_js = "[\n" + ",\n".join(
+              f"    ['{p['name'].replace(chr(39), chr(92)+chr(39))}','{p['start']}','{p['end']}','{p['color']}']"
+              for p in project_list
+          ) + "\n  ]"
 
           assign_lines = []
           for pi, p in enumerate(project_list):
@@ -112,38 +123,45 @@ jobs:
                       assign_lines.append(f"    [{cid_to_idx[mid]},{pi},'{p['start']}','{p['end']}',50]")
                       added.add(mid)
 
-          new_init = """function init(){
-            const RES=[
-          """ + ",\n".join(res_lines) + """
-            ];
+          assign_js = "[\n" + ",\n".join(assign_lines) + "\n  ]"
+
+          today = datetime.now().strftime("%B %Y")
+
+          new_init = f"""function init(){{
+            const RES={res_js};
             RES.forEach(([n,role,color])=>addRes(n,role,color));
             const PC=PROJ_COLORS;
-            const PROJ=[
-          """ + ",\n".join(proj_lines) + """
-            ];
+            const PROJ={proj_js};
             PROJ.forEach(([n,s,e,color])=>addProj(n,s,e,color));
-            const A=[
-          """ + ",\n".join(assign_lines) + """
-            ];
+            const A={assign_js};
             A.forEach(([ri,pi,s,e,pct])=>addAssign(resources[ri].id,projects[pi].id,s,e,pct));
             render();
-          }"""
+          }}"""
 
-          # 6. Reemplazar en el HTML
+          # Leer HTML
           with open("index.html","r",encoding="utf-8") as f:
               html = f.read()
 
-          html = re.sub(r'function init\(\)\{.*?\}\s*\ninit\(\);',
-                        new_init + '\n\ninit();',
-                        html, flags=re.DOTALL)
+          # Reemplazar init() — buscar inicio y fin exactos
+          start_marker = "function init(){"
+          end_marker = "\ninit();"
 
-          html = re.sub(r'🔄 Datos Wrike · [^<"]+',
-                        f'🔄 Datos Wrike · {today}', html)
+          start_pos = html.find(start_marker)
+          end_pos = html.find(end_marker, start_pos)
+
+          if start_pos == -1 or end_pos == -1:
+              print("ERROR: No se encontró función init() en el HTML")
+              exit(1)
+
+          new_html = html[:start_pos] + new_init + html[end_pos:]
+
+          # Actualizar fecha
+          new_html = re.sub(r'Datos Wrike · [^<"]+', f'Datos Wrike · {today}', new_html)
 
           with open("index.html","w",encoding="utf-8") as f:
-              f.write(html)
+              f.write(new_html)
 
-          print(f"✅ Listo: {len(contact_list)} recursos, {len(project_list)} proyectos")
+          print(f"✅ Actualizado: {len(contact_list)} recursos, {len(project_list)} proyectos")
           PYEOF
 
       - name: Publicar cambios
