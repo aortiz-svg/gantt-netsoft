@@ -30,17 +30,30 @@ jobs:
 
           print("Consultando Wrike...")
           r = requests.get("https://www.wrike.com/api/v4/contacts", headers=headers)
-          contacts = [c for c in r.json().get("data", [])
+          raw = r.json()
+          all_contacts = raw.get("data", [])
+          print(">>> HTTP status contacts:", r.status_code)
+          print(">>> Total contactos sin filtro:", len(all_contacts))
+          if all_contacts:
+              c0 = all_contacts[0]
+              print(">>> Ejemplo contacto:", c0.get("primaryEmail","(sin email)"), "| type:", c0.get("type",""), "| active:", c0.get("active",""), "| deleted:", c0.get("deleted",""))
+          else:
+              print(">>> Respuesta raw:", str(raw)[:300])
+
+          contacts = [c for c in all_contacts
                       if not c.get("deleted") and c.get("type") == "Person"
                       and "@netsoft.com" in c.get("primaryEmail","") and c.get("active")]
 
           r2 = requests.get('https://www.wrike.com/api/v4/folders?project=true&fields=["project","members"]', headers=headers)
-          projects = [p for p in r2.json().get("data", [])
+          print(">>> HTTP status projects:", r2.status_code)
+          all_projects = r2.json().get("data", [])
+          print(">>> Total proyectos sin filtro:", len(all_projects))
+          projects = [p for p in all_projects
                       if p.get("project")
                       and p["project"].get("status","").lower() not in ["completed","cancelled","onhold"]
                       and p["project"].get("startDate") and p["project"].get("endDate")]
 
-          print("  " + str(len(contacts)) + " contactos, " + str(len(projects)) + " proyectos")
+          print("  " + str(len(contacts)) + " contactos, " + str(len(projects)) + " proyectos (despues de filtros)")
 
           owner_ids = set()
           for p in projects:
@@ -108,7 +121,6 @@ jobs:
           with open("index.html","r",encoding="utf-8") as f:
               html = f.read()
 
-          # Buscar marcadores
           MARKER_START = "// GANTT_DATA_START"
           MARKER_END   = "// GANTT_DATA_END"
 
@@ -116,15 +128,10 @@ jobs:
           end   = html.find(MARKER_END)
 
           if start == -1 or end == -1:
-              print("ERROR: No se encontraron los marcadores GANTT_DATA_START / GANTT_DATA_END en el HTML")
-              print("  Posicion START:", start)
-              print("  Posicion END:  ", end)
+              print("ERROR: No se encontraron los marcadores en el HTML")
               exit(1)
 
-          # Reemplazar todo entre (e incluyendo) los marcadores
           new_html = html[:start] + new_init + html[end + len(MARKER_END):]
-
-          # Actualizar el texto de fecha en el header
           new_html = re.sub(r'Datos Wrike · [^<"]+', 'Datos Wrike · ' + today, new_html)
 
           with open("index.html","w",encoding="utf-8") as f:
