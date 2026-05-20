@@ -22,29 +22,30 @@ jobs:
           WRIKE_TOKEN: ${{ secrets.WRIKE_TOKEN }}
         run: |
           python3 - << 'PYEOF'
-          import os, requests, re, json
-          from datetime import datetime
+          import os, requests, json
 
           WRIKE_TOKEN = os.environ["WRIKE_TOKEN"]
           headers = {"Authorization": "Bearer " + WRIKE_TOKEN}
 
-          FOLDER_ID = "IEAEDUQVIS53CPQR"
+          # Ver spaces disponibles
+          r = requests.get("https://www.wrike.com/api/v4/spaces", headers=headers)
+          print("HTTP spaces:", r.status_code)
+          spaces = r.json().get("data", [])
+          print("Spaces encontrados:", len(spaces))
+          for s in spaces:
+              print("  Space:", s.get("title"), "| ID:", s.get("id"))
 
-          # Ver qué tiene esta carpeta directamente
-          r = requests.get(
-              "https://www.wrike.com/api/v4/folders/" + FOLDER_ID,
-              headers=headers
-          )
-          print("HTTP folder directo:", r.status_code)
-          data = r.json().get("data", [])
-          if data:
-              f = data[0]
-              print("Title:", f.get("title"))
-              print("childIds count:", len(f.get("childIds",[])))
-              print("childIds:", f.get("childIds",[])[:5])
-              print("Todas las keys:", list(f.keys()))
-          else:
-              print("Respuesta:", str(r.json())[:300])
+          # Por cada space, ver sus folders raíz
+          for s in spaces[:3]:
+              sid = s.get("id")
+              rf = requests.get(
+                  "https://www.wrike.com/api/v4/spaces/" + sid + "/folders",
+                  headers=headers
+              )
+              print("\nFolders en space '" + s.get("title","") + "' (HTTP " + str(rf.status_code) + "):")
+              folders = rf.json().get("data", [])
+              for f in folders[:10]:
+                  print("  ", f.get("title"), "| ID:", f.get("id"), "| childIds:", len(f.get("childIds",[])))
 
           PYEOF
 
