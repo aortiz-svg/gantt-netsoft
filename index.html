@@ -155,7 +155,7 @@ body.bar-resizing *{cursor:ew-resize!important;user-select:none!important}
     <button onclick="showModal('delProj')">&#8722; Proyecto</button>
     <button onclick="showModal('delAssign')">&#8722; Asignación</button>
     <div class="sep"></div>
-    <span id="syncInfo">🔄 Datos Wrike · May 2026</span>
+    <span id="syncInfo">🔄 Datos Wrike · Mayo 2026</span>
   </div>
 </div>
 
@@ -525,24 +525,104 @@ function saveRes(){const n=document.getElementById('mName').value.trim(),role=do
 function saveProj(){const n=document.getElementById('pName').value.trim(),s=document.getElementById('pStart').value,e=document.getElementById('pEnd').value;if(!n||!s||!e)return alert('Completa todos los campos.');addProj(n,s,e);closeModal();render();}
 function saveAssign(){const rid=+document.getElementById('aRes').value,pid=+document.getElementById('aProj').value,s=document.getElementById('aStart').value,e=document.getElementById('aEnd').value,pct=+document.getElementById('aPct').value;if(!s||!e)return alert('Ingresa fechas.');addAssign(rid,pid,s,e,pct);closeModal();render();}
 
-// ── DATOS REALES DE WRIKE (cargados May 2026) ─────────────────────────────────
+// GANTT_DATA_START
 function init(){
+  // RECURSOS — Consultores y Gerentes México (IDs de Wrike verificados)
   const RES=[
-
+    ['CARLOS ALBERTO YAÑEZ CARDONA','GERENTE','#1a3354'],
+    ['JAZMIN JIMENEZ LEYVA','CONSULTOR','#2563eb'],
+    ['JUANA MARIA MUNGUIA SALDAÑA','CONSULTOR','#2563eb'],
+    ['RENE GUADALUPE LEON QUINTAL','CONSULTOR','#2563eb'],
+    ['EFREN SALAZAR ESQUIVEL','CONSULTOR','#2563eb'],
+    ['MARCO ANTONIO GUERRERO GARCIA','GERENTE','#1a3354'],
+    ['VIRGINIA CHAN SANCHEZ','CONSULTOR','#2563eb'],
+    ['ANDREA DANIELA SANDOVAL PINZON','CONSULTOR','#2563eb'],
+    ['HECTOR ANDRADE POMPA','CONSULTOR','#2563eb'],
+    ['MIGUEL ANGEL BORGO JUAREZ','GERENTE','#1a3354'],
+    ['NANCY OLIVIA PEÑA AVILA','CONSULTOR','#2563eb'],
+    ['RAFAEL ZAMORA FIGUEROA','CONSULTOR','#2563eb'],
+    ['CESAR FLORES ALVAREZ','GERENTE','#1a3354'],
+    ['PERLA MAGNOLIA ALCANTAR PEÑA','CONSULTOR','#2563eb'],
+    ['RODRIGO ROJAS TREJO','CONSULTOR','#2563eb'],
+    ['CLAUDIA AVILA DOMINGUEZ','CONSULTOR','#2563eb'],
+    ['GUADALUPE GALAN CRUZ','CONSULTOR','#2563eb'],
+    ['AARON GONZALEZ SANTIAGO','CONSULTOR','#2563eb'],
+    ['BERENICE CRUZ OLIVARES','CONSULTOR','#2563eb'],
+    ['CARLOS TORREBLANCA MARTINEZ','GERENTE','#1a3354'],
+    ['FRANCISCO JAVIER CASANGO PEREZ','CONSULTOR','#2563eb'],
+    ['GABRIEL VAZQUEZ REYES','CONSULTOR','#2563eb'],
+    ['GALDINO MIGUEL PEREZ','GERENTE','#1a3354'],
+    ['LYDIA ALEXANDRA BELTRAN GARCIA','CONSULTOR','#2563eb'],
+    ['TANIA ERIKA IBAÑEZ SANCHEZ','CONSULTOR','#2563eb'],
+    ['HUGO DANIEL RODRIGUEZ LUCIO','CONSULTOR','#2563eb'],
+    ['MIRYAM ZORAYA VAZQUEZ VAZQUEZ','GERENTE','#1a3354'],
+    ['OSCAR HERNANDEZ MENDOZA','CONSULTOR','#2563eb'],
+    ['GRISELDA AGUILAR VIDAL','CONSULTOR','#2563eb'],
+    ['GIOVANNA MIRANDA SANCHEZ CASILLAS','CONSULTOR','#2563eb'],
+    ['GUSTAVO ENRIQUE ALBORNOZ ORTA','GERENTE','#1a3354'],
+    ['LADY NATHALY GARZON SALCEDO','CONSULTOR','#2563eb'],
+    ['KARINA ELIZABETH LOPEZ LOPEZ','CONSULTOR','#2563eb'],
+    ['DAYBELIS ISAMAR RADILLA LOPEZ','CONSULTOR','#2563eb'],
+    ['GABRIELA GLORIA PALACIOS GARCIA','CONSULTOR','#2563eb'],
+    ['ANA LAURA SANCHEZ RAMIREZ','GERENTE','#1a3354'],
+    ['ARMANDO BENET CONTRERAS','CONSULTOR','#2563eb'],
+    ['LUCIA CONCEPCION PECH IBARRA','CONSULTOR','#2563eb'],
+    ['JAYRO JIMENEZ CEDENO','CONSULTOR','#2563eb']
   ];
   RES.forEach(([n,role,color])=>addRes(n,role,color));
+
+  // PROYECTOS — Activos en Wrike México (fechas reales verificadas May 2026)
   const PC=PROJ_COLORS;
   const PROJ=[
-
+    ['GALDISA',                        '2024-03-19','2026-06-30',PC[0]],
+    ['GRUPO PRIMAVERA',                '2024-05-14','2026-07-21',PC[1]],
+    ['PANGEA',                         '2024-10-01','2026-07-07',PC[2]],
+    ['OUTLET',                         '2024-05-20','2026-08-06',PC[3]],
+    ['PROMINOX',                       '2025-06-10','2026-07-22',PC[4]],
+    ['CAJA MORELIA',                   '2025-06-17','2026-06-12',PC[5]],
+    ['COLIMAN',                        '2025-06-12','2026-05-20',PC[6]],
+    ['ARTIMEDICA',                     '2025-08-11','2026-06-04',PC[7]],
+    ['IAS',                            '2025-11-03','2027-08-25',PC[8]],
+    ['COLEGIO (KOVAL)',                 '2026-01-05','2026-07-17',PC[9]],
+    ['SHAREWOODS',                     '2025-12-12','2026-07-06',PC[10]],
+    ['CONTINENTAL MOTORES - HONDURAS', '2025-12-29','2026-07-03',PC[11]],
+    ['CRYOHOLD FASE III',              '2026-01-08','2026-07-14',PC[12]],
+    ['VRM MAQUINARIA',                 '2026-01-09','2026-10-02',PC[13]],
+    ['CHENSON',                        '2026-01-14','2027-01-05',PC[14]],
+    ["GIANNI'S GROUP",                 '2026-01-26','2026-08-24',PC[15]],
+    ['TRACTIAN',                       '2026-02-06','2026-07-01',PC[16]],
+    ['EDGEUNO F1',                     '2026-04-17','2026-08-11',PC[17]],
+    ['NUMARIS',                        '2026-05-14','2026-09-04',PC[18]]
   ];
   PROJ.forEach(([n,s,e,color])=>addProj(n,s,e,color));
-  const A=[
 
+  // ASIGNACIONES (Gerente Responsable + Consultores por proyecto)
+  const A=[
+    [26,0,'2024-03-19','2026-06-30',50],[25,0,'2024-03-19','2026-06-30',50],[27,0,'2024-03-19','2026-06-30',50],[24,0,'2024-03-19','2026-06-30',50],
+    [9,1,'2024-05-14','2026-07-21',50],[11,1,'2024-05-14','2026-07-21',50],[31,1,'2024-05-14','2026-07-21',50],[32,1,'2024-05-14','2026-07-21',50],
+    [35,2,'2024-10-01','2026-07-07',50],[14,2,'2024-10-01','2026-07-07',50],[32,2,'2024-10-01','2026-07-07',50],
+    [9,3,'2024-05-20','2026-08-06',50],[31,3,'2024-05-20','2026-08-06',50],[14,3,'2024-05-20','2026-08-06',50],[10,3,'2024-05-20','2026-08-06',50],
+    [30,4,'2025-06-10','2026-07-22',50],[16,4,'2025-06-10','2026-07-22',50],[34,4,'2025-06-10','2026-07-22',50],[29,4,'2025-06-10','2026-07-22',50],[33,4,'2025-06-10','2026-07-22',50],
+    [5,5,'2025-06-17','2026-06-12',50],[6,5,'2025-06-17','2026-06-12',50],[4,5,'2025-06-17','2026-06-12',50],
+    [5,6,'2025-06-12','2026-05-20',50],[15,6,'2025-06-12','2026-05-20',50],[16,6,'2025-06-12','2026-05-20',50],
+    [0,7,'2025-08-11','2026-06-04',50],[3,7,'2025-08-11','2026-06-04',50],[2,7,'2025-08-11','2026-06-04',50],[1,7,'2025-08-11','2026-06-04',50],
+    [0,8,'2025-11-03','2027-08-25',50],[1,8,'2025-11-03','2027-08-25',50],[29,8,'2025-11-03','2027-08-25',50],
+    [30,9,'2026-01-05','2026-07-17',50],[7,9,'2026-01-05','2026-07-17',50],[16,9,'2026-01-05','2026-07-17',50],
+    [26,10,'2025-12-12','2026-07-06',50],[25,10,'2025-12-12','2026-07-06',50],[24,10,'2025-12-12','2026-07-06',50],
+    [19,11,'2025-12-29','2026-07-03',50],[17,11,'2025-12-29','2026-07-03',50],[18,11,'2025-12-29','2026-07-03',50],
+    [22,12,'2026-01-08','2026-07-14',50],[7,12,'2026-01-08','2026-07-14',50],[3,12,'2026-01-08','2026-07-14',50],[23,12,'2026-01-08','2026-07-14',50],[15,12,'2026-01-08','2026-07-14',50],[20,12,'2026-01-08','2026-07-14',50],[21,12,'2026-01-08','2026-07-14',50],[24,12,'2026-01-08','2026-07-14',50],
+    [35,13,'2026-01-09','2026-10-02',50],[33,13,'2026-01-09','2026-10-02',50],[36,13,'2026-01-09','2026-10-02',50],
+    [12,14,'2026-01-14','2027-01-05',50],[14,14,'2026-01-14','2027-01-05',50],[13,14,'2026-01-14','2027-01-05',50],[2,14,'2026-01-14','2027-01-05',50],
+    [0,15,'2026-01-26','2026-08-24',50],[30,15,'2026-01-26','2026-08-24',50],[28,15,'2026-01-26','2026-08-24',50],
+    [35,16,'2026-02-06','2026-07-01',50],[5,16,'2026-02-06','2026-07-01',50],[4,16,'2026-02-06','2026-07-01',50],
+    [5,17,'2026-04-17','2026-08-11',50],[18,17,'2026-04-17','2026-08-11',50],[38,17,'2026-04-17','2026-08-11',50]
   ];
   A.forEach(([ri,pi,s,e,pct])=>addAssign(resources[ri].id,projects[pi].id,s,e,pct));
   render();
 }
+
 init();
+// GANTT_DATA_END
 </script>
 </body>
 </html>
