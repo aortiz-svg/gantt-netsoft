@@ -30,9 +30,8 @@ jobs:
 
           print("Consultando contactos Wrike...")
           r = requests.get("https://www.wrike.com/api/v4/contacts", headers=headers)
-          all_contacts = r.json().get("data", [])
           cid_to_contact = {}
-          for c in all_contacts:
+          for c in r.json().get("data", []):
               if not c.get("deleted") and c.get("type") == "Person" and "@netsoft.com" in c.get("primaryEmail",""):
                   cid_to_contact[c["id"]] = c
           print("Contactos netsoft:", len(cid_to_contact))
@@ -42,30 +41,37 @@ jobs:
               "KUAVLHFS","KUAVJKUF","KUAU2SMC","KUAVLHFG",
           }
 
+          # CM = custom field IEAEOUQVJUAIICGU
+          # Assignees = owners del proyecto en Wrike (excluyendo PMOs)
+          # Datos validados via MCP 2026-05-21
           PROJECTS = [
-              ("CONSULTIMER",             "2026-05-20","2026-09-10", [],           []),
-              ("DOT LIB",                 "2026-05-20","2026-09-10", [],           []),
-              ("SOPORTE PINOS",           "2026-05-20","2026-09-10", ["KUAU4XSD"], []),
-              ("ARTIMEDICA",              "2025-08-11","2026-06-04", ["KUAVLK4B"], ["KUAVLLN7","KUAVLL5O","KUAVMF42"]),
-              ("CAJA MORELIA VALLADOLID", "2025-06-17","2026-06-12", ["KUAU4XSM"], ["KUAVLRVB","KUAVNDZZ"]),
-              ("CRYOHOLD FASE III",       "2026-01-08","2026-07-14", ["KUAVLK42"], ["KUAVLLKU","KUAVLLN7","KUAVMGTN","KUAVMGUS","KUAVOH6R","KUAWIWCT","KUAVLHUK"]),
-              ("SHAREWOODS",              "2025-12-12","2026-07-06", ["KUAVKGOD"], ["KUAVK5F5","KUAVLHUK"]),
-              ("PROMINOX",                "2025-06-10","2026-07-22", ["KUAUN2EM"], ["KUAVOIGD","KUAVOYVV","KUAVJ55W"]),
-              ("COLEGIO",                 "2026-01-05","2026-07-17", ["KUAUN2EM"], ["KUAVLLKU","KUAVOIGD"]),
-              ("CONTINENTAL MOTORES",     "2025-12-29","2026-07-03", ["KUAVLSHS"], ["KUAVK5D5","KUAVMY3K"]),
-              ("TRACTIAN",                "2026-02-06","2026-07-01", ["KUAPWMR5"], ["KUAVLLN7","KUAVLL5O","KUAVMF42"]),
-              ("GIANNI'S GROUP",          "2026-01-26","2026-08-24", ["KUAVLK4B"], ["KUAUN2EM","KUAVLN6P"]),
-              ("CHENSON",                 "2026-01-14","2027-01-05", ["KUAU4XSD"], ["KUAVNFJZ","KUAVOX2S","KUAVLL5O"]),
-              ("EDGEUNO F1",              "2026-04-17","2026-08-11", ["KUAU4XSM"], ["KUAYCV67"]),
-              ("VRM MAQUINARIA",          "2026-01-09","2026-10-02", ["KUAPWMR5"], ["KUAVJ55W","KUAVNDZZ"]),
-              ("NUMARIS",                 "2026-05-14","2026-09-04", [],           []),
-              ("OUTLET",                  "2024-05-20","2026-08-06", ["KUAVF4AX"], ["KUAVNDZZ","KUAVNFJZ","KUAVNFKQ"]),
-              ("GRUPO PRIMAVERA",         "2024-05-14","2026-07-21", ["KUAVF4AX"], ["KUAVJ54C","KUAVNDZZ","KUAVNEQ4"]),
-              ("COLIMAN BANANA'S",        "2025-06-12","2026-05-20", ["KUAU4XSM"], ["KUAVMGUS","KUAVOIGD"]),
-              ("GALDISA",                 "2024-03-19","2026-06-30", ["KUAVKGOD"], ["KUAVK5F5","KUAVLHAS","KUAVLHUK"]),
-              ("PANGEA",                  "2024-10-01","2026-07-07", ["KUAPWMR5"], []),
-              ("IAS",                     "2025-11-03","2027-08-25", ["KUAVLK4B"], []),
+              # nombre,                   start,        end,          [cm_ids],        [assignee_ids]
+              ("GALDISA",                 "2024-03-19","2026-06-30", ["KUAVKGOD"],     ["KUAVK5F5","KUAVLHAS","KUAVLHUK"]),
+              ("GRUPO PRIMAVERA",         "2024-05-14","2026-07-21", ["KUAVF4AX"],     ["KUAVJ54C","KUAVNDZZ","KUAVNEQ4"]),
+              ("PANGEA",                  "2024-10-01","2026-07-07", ["KUAPWMR5"],     []),
+              ("OUTLET",                  "2024-05-20","2026-08-06", ["KUAVF4AX"],     ["KUAVNDZZ","KUAVNFJZ","KUAVNFKQ"]),
+              ("PROMINOX",                "2025-06-10","2026-07-22", ["KUAUN2EM"],     ["KUAVOIGD","KUAVOYVV","KUAVJ55W"]),
+              ("CAJA MORELIA VALLADOLID", "2025-06-17","2026-06-12", ["KUAU4XSM"],     ["KUAVLRVB","KUAVNDZZ"]),
+              ("COLIMAN BANANA'S",        "2025-06-12","2026-05-20", ["KUAU4XSM"],     ["KUAVMGUS","KUAVOIGD"]),
+              ("ARTIMEDICA",              "2025-08-11","2026-06-04", ["KUAVLK4B"],     ["KUAVLLN7","KUAVLL5O","KUAVMF42"]),
+              ("IAS",                     "2025-11-03","2027-08-25", ["KUAVLK4B"],     []),
+              ("COLEGIO",                 "2026-01-05","2026-07-17", ["KUAUN2EM"],     ["KUAVLLKU","KUAVOIGD"]),
+              ("SHAREWOODS",              "2025-12-12","2026-07-06", ["KUAVKGOD"],     ["KUAVK5F5","KUAVLHUK"]),
+              ("CONTINENTAL MOTORES",     "2025-12-29","2026-07-03", ["KUAVLSHS"],     ["KUAVK5D5","KUAVMY3K"]),
+              ("CRYOHOLD FASE III",       "2026-01-08","2026-07-14", ["KUAVLK42"],     ["KUAVLLKU","KUAVLLN7","KUAVMGTN","KUAVMGUS","KUAVOH6R","KUAWIWCT","KUAVLHUK"]),
+              ("VRM MAQUINARIA",          "2026-01-09","2026-10-02", ["KUAPWMR5"],     ["KUAVJ55W","KUAVNDZZ"]),
+              ("CHENSON",                 "2026-01-14","2027-01-05", ["KUAU4XSD"],     ["KUAVNFJZ","KUAVOX2S","KUAVLL5O"]),
+              ("GIANNI'S GROUP",          "2026-01-26","2026-08-24", ["KUAVLK4B"],     ["KUAUN2EM","KUAVLN6P"]),
+              ("TRACTIAN",                "2026-02-06","2026-07-01", ["KUAPWMR5"],     ["KUAWISKD"]),
+              ("EDGEUNO F1",              "2026-04-17","2026-08-11", ["KUAU4XSM"],     ["KUAVLN6P","KUAYCV67"]),
+              ("NUMARIS",                 "2026-05-14","2026-09-04", [],               []),
+              ("SOPORTE PINOS",           "2026-05-20","2026-09-10", ["KUAU4XSD"],     []),
+              ("DOT LIB",                 "2026-05-20","2026-09-10", [],               []),
+              ("CONSULTIMER",             "2026-05-20","2026-09-10", [],               []),
           ]
+
+          # Recursos sin proyecto — aparecen en el Gantt sin barras
+          EXTRA_RESOURCES = ["KUAWISDK"]  # Hector Andrade
 
           COLORS = ['#1d4ed8','#0e7490','#0f766e','#1e6b55','#4338ca','#6d28d9','#7c3aed',
                     '#2563eb','#0284c7','#0369a1','#1a6b8a','#164e63','#065f46','#0d5c6e',
@@ -81,8 +87,9 @@ jobs:
               for aid in assignees:
                   if aid not in PMO_IDS:
                       resource_ids.add(aid)
+          for rid in EXTRA_RESOURCES:
+              resource_ids.add(rid)
 
-          # Sin filtro de timezone — solo filtramos por @netsoft.com
           final_contacts = []
           seen_ids = set()
           for rid in resource_ids:
@@ -101,15 +108,8 @@ jobs:
 
           cid_to_idx = {c["id"]: i for i, c in enumerate(final_contacts)}
 
-          res_lines = []
-          for c in final_contacts:
-              name = c["name"].replace("'","\\'")
-              res_lines.append("    ['" + name + "','" + c["role"] + "','" + c["color"] + "']")
-
-          proj_lines = []
-          for i, (name, start, end, _, _) in enumerate(PROJECTS):
-              pname = name.replace("'","\\'")
-              proj_lines.append("    ['" + pname + "','" + start + "','" + end + "','" + COLORS[i % len(COLORS)] + "']")
+          res_lines = ["    ['" + c["name"].replace("'","\\'") + "','" + c["role"] + "','" + c["color"] + "']" for c in final_contacts]
+          proj_lines = ["    ['" + p[0].replace("'","\\'") + "','" + p[1] + "','" + p[2] + "','" + COLORS[i % len(COLORS)] + "']" for i,p in enumerate(PROJECTS)]
 
           assign_lines = []
           for pi, (_, start, end, cms, assignees) in enumerate(PROJECTS):
@@ -121,9 +121,7 @@ jobs:
                   added.add(oid)
 
           today = datetime.now().strftime("%B %Y")
-
-          new_init  = "// GANTT_DATA_START\n"
-          new_init += "function init(){\n"
+          new_init  = "// GANTT_DATA_START\nfunction init(){\n"
           new_init += "  const RES=[\n" + ",\n".join(res_lines) + "\n  ];\n"
           new_init += "  RES.forEach(([n,role,color])=>addRes(n,role,color));\n"
           new_init += "  const PC=PROJ_COLORS;\n"
@@ -131,24 +129,19 @@ jobs:
           new_init += "  PROJ.forEach(([n,s,e,color])=>addProj(n,s,e,color));\n"
           new_init += "  const A=[\n" + ",\n".join(assign_lines) + "\n  ];\n"
           new_init += "  A.forEach(([ri,pi,s,e,pct])=>addAssign(resources[ri].id,projects[pi].id,s,e,pct));\n"
-          new_init += "  render();\n}\n"
-          new_init += "init();\n// GANTT_DATA_END"
+          new_init += "  render();\n}\ninit();\n// GANTT_DATA_END"
 
           with open("index.html","r",encoding="utf-8") as f:
               html = f.read()
-
           s = html.find("// GANTT_DATA_START")
           e = html.find("// GANTT_DATA_END")
           if s == -1 or e == -1:
-              print("ERROR: marcadores no encontrados")
-              exit(1)
+              print("ERROR: marcadores no encontrados"); exit(1)
 
           new_html = html[:s] + new_init + html[e + len("// GANTT_DATA_END"):]
           new_html = re.sub(r'Datos Wrike · [^<"]+', 'Datos Wrike · ' + today, new_html)
-
           with open("index.html","w",encoding="utf-8") as f:
               f.write(new_html)
-
           print("OK: index.html actualizado")
           PYEOF
 
