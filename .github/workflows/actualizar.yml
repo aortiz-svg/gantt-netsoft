@@ -37,51 +37,49 @@ jobs:
                       if not c.get("deleted")
                       and c.get("type") == "Person"
                       and "@netsoft.com" in c.get("primaryEmail","")]
-          print("Contactos netsoft:", len(contacts))
           cid_to_contact = {c["id"]: c for c in contacts}
+          print("Contactos netsoft:", len(contacts))
 
-          # PASO 2 — childIds de PROYECTOS ACTIVOS
+          # PASO 2 — Todos los proyectos dentro de PROYECTOS ACTIVOS usando paginacion
           FOLDER_ID = "IEAEOUQVI5S3CPQR"
-          r2 = requests.get(
-              "https://www.wrike.com/api/v4/spaces/IEAEOUQVI5RISQI5/folders",
-              headers=headers
-          )
-          folders_map = {f["id"]: f for f in r2.json().get("data", [])}
-          parent = folders_map.get(FOLDER_ID)
-          if not parent:
-              print("ERROR: No se encontro la carpeta PROYECTOS ACTIVOS")
-              exit(1)
+          all_projects = []
+          next_token = None
 
-          child_ids = parent.get("childIds", [])
-          print("Proyectos en PROYECTOS ACTIVOS:", len(child_ids))
+          while True:
+              params = {"pageSize": 200, "project": "true", "fields": '["project","members","customFields"]'}
+              url = "https://www.wrike.com/api/v4/folders/" + FOLDER_ID + "/folders"
+              if next_token:
+                  params["nextPageToken"] = next_token
+              r2 = requests.get(url, headers=headers, params=params)
+              body = r2.json()
+              all_projects.extend(body.get("data", []))
+              next_token = body.get("nextPageToken")
+              if not next_token:
+                  break
 
-          # PASO 3 — Detalle de cada proyecto por ID
-          projects = []
-          chunk_size = 20
-          for i in range(0, len(child_ids), chunk_size):
-              chunk = child_ids[i:i+chunk_size]
-              ids_str = ",".join(chunk)
-              r3 = requests.get(
-                  "https://www.wrike.com/api/v4/folders/" + ids_str,
-                  headers=headers,
-                  params={"fields": '["project","members","customFields"]'}
-              )
-              print("  HTTP chunk", i//chunk_size+1, ":", r3.status_code)
-              if r3.status_code == 200:
-                  projects.extend(r3.json().get("data", []))
+          print("Total folders en PROYECTOS ACTIVOS:", len(all_projects))
 
-          print("Proyectos con detalle:", len(projects))
+          # Filtrar solo los proyectos principales (titulo empieza con IMPLEMENTACI)
+          main_projects = [p for p in all_projects
+                           if p.get("title","").upper().startswith("IMPLEMENTACI")
+                           and p.get("project")
+                           and p["project"].get("startDate")
+                           and p["project"].get("endDate")]
 
-          # PASO 4 — Filtrar activos con fechas
+          # Si no hay nada con ese filtro, tomar todos con fechas
+          if not main_projects:
+              main_projects = [p for p in all_projects
+                               if p.get("project")
+                               and p["project"].get("startDate")
+                               and p["project"].get("endDate")]
+
           STATUS_SKIP = ["completed", "cancelled", "onhold"]
-          active = [p for p in projects
-                    if p.get("project")
-                    and p["project"].get("status","").lower() not in STATUS_SKIP
-                    and p["project"].get("startDate")
-                    and p["project"].get("endDate")]
+          active = [p for p in main_projects
+                    if p["project"].get("status","").lower() not in STATUS_SKIP]
+
           print("Proyectos activos con fechas:", len(active))
 
-          # PASO 5 — Recursos: ownerIds = Consulting Manager, members = Assignees
+          # PASO 3 — Recursos
           owner_ids = set()
           resource_ids = set()
           for p in active:
@@ -94,10 +92,8 @@ jobs:
                   if mid:
                       resource_ids.add(mid)
 
-          # Solo los que son de netsoft
           netsoft_resources = [cid_to_contact[rid] for rid in resource_ids if rid in cid_to_contact]
 
-          # Preferir México, si hay menos de 5 usar todos
           def is_mexico(c):
               tz = c.get("timezone", "")
               return "Mexico" in tz or "America/Mexico" in tz
@@ -117,7 +113,7 @@ jobs:
           final_contacts.sort(key=lambda x: x["name"])
           print("Recursos finales:", len(final_contacts))
 
-          # PASO 6 — Armar datos para el Gantt
+          # PASO 4 — Armar datos Gantt
           COLORS = ['#1d4ed8','#0e7490','#0f766e','#1e6b55','#4338ca','#6d28d9','#7c3aed',
                     '#2563eb','#0284c7','#0369a1','#1a6b8a','#164e63','#065f46','#0d5c6e',
                     '#1e40af','#3b5998','#5a2d82','#6b21a8','#374151']
