@@ -715,8 +715,8 @@ init();
 </html>
 <script>
 // ── CHAT ASISTENTE ──────────────────────────────────────────────────────────
-const GEMINI_KEY = 'AIzaSyDglJ2TXIcsBXRYrGTyiD0iaxBdGPhOdFI';
-const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' + GEMINI_KEY;
+const OR_KEY = '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';
+const OR_URL = 'https://openrouter.ai/api/v1/chat/completions';
 
 let chatHistory = [];
 
@@ -784,20 +784,32 @@ async function sendChat() {
   chatHistory.push({ role: 'user', parts: [{ text: msg }] });
 
   try {
+    // Construir mensajes para OpenRouter
+    const msgs = [{ role: 'system', content: systemCtx }];
+    chatHistory.forEach(m => {
+      msgs.push({ role: m.role === 'model' ? 'assistant' : m.role, content: m.parts[0].text });
+    });
+
     const body = {
-      system_instruction: { parts: [{ text: systemCtx }] },
-      contents: chatHistory,
-      generationConfig: { temperature: 0.7, maxOutputTokens: 800 }
+      model: 'meta-llama/llama-3.1-8b-instruct:free',
+      messages: msgs,
+      temperature: 0.7,
+      max_tokens: 800
     };
 
-    const res = await fetch(GEMINI_URL, {
+    const res = await fetch(OR_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + OR_KEY,
+        'HTTP-Referer': 'https://aortiz-svg.github.io/gantt-netsoft',
+        'X-Title': 'Gantt Netsoft'
+      },
       body: JSON.stringify(body)
     });
 
     const data = await res.json();
-    const reply = data?.candidates?.[0]?.content?.parts?.[0]?.text || 'No pude obtener respuesta. Intenta de nuevo.';
+    const reply = data?.choices?.[0]?.message?.content || 'No pude obtener respuesta. Intenta de nuevo.';
 
     thinking.remove();
     addMsg('assistant', reply);
