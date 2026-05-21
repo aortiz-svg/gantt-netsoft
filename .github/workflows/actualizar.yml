@@ -37,7 +37,8 @@ jobs:
                   cid_to_contact[c["id"]] = c
           print("Contactos netsoft:", len(cid_to_contact))
 
-          # Solo Consulting Managers por proyecto (sin PMOs)
+          # Solo Consulting Managers (owners en Wrike), sin PMOs
+          # Actualizado: 2026-05-21
           PROJECTS = [
               ("GALDISA",                 "2024-03-19","2026-06-30", ["KUAVK5F5","KUAVLHAS","KUAVLHUK"]),
               ("GRUPO PRIMAVERA",         "2024-05-14","2026-07-21", ["KUAVJ54C","KUAVNDZZ","KUAVNEQ4"]),
@@ -47,10 +48,10 @@ jobs:
               ("CAJA MORELIA VALLADOLID", "2025-06-17","2026-06-12", ["KUAVLRVB","KUAVNDZZ"]),
               ("COLIMAN BANANA'S",        "2025-06-12","2026-05-20", ["KUAVMGUS","KUAVOIGD"]),
               ("ARTIMEDICA",              "2025-08-11","2026-06-04", ["KUAVLLN7","KUAVLL5O","KUAVMF42"]),
-              ("COLEGIO",                 "2026-01-05","2026-07-17", ["KUAVJKUF","KUAUN2EM","KUAVLLKU","KUAVOIGD"]),
+              ("COLEGIO",                 "2026-01-05","2026-07-17", ["KUAUN2EM","KUAVLLKU","KUAVOIGD"]),
               ("SHAREWOODS",              "2025-12-12","2026-07-06", ["KUAVK5F5","KUAVLHUK"]),
               ("CONTINENTAL MOTORES",     "2025-12-29","2026-07-03", ["KUAVK5D5","KUAVMY3K"]),
-              ("CRYOHOLD FASE III",       "2026-01-08","2026-07-14", ["KUAVLHFG","KUAVLHFS","KUAVLK42","KUAVLLKU","KUAVLLN7"]),
+              ("CRYOHOLD FASE III",       "2026-01-08","2026-07-14", ["KUAVLK42","KUAVLLKU","KUAVLLN7","KUAVMGTN","KUAVMGUS","KUAVOH6R","KUAWIWCT","KUAVLHUK"]),
               ("VRM MAQUINARIA",          "2026-01-09","2026-10-02", ["KUAVJ55W","KUAVNDZZ"]),
               ("CHENSON",                 "2026-01-14","2027-01-05", ["KUAU4XSD"]),
               ("GIANNI'S GROUP",          "2026-01-26","2026-08-24", ["KUAUN2EM","KUAVLN6P"]),
