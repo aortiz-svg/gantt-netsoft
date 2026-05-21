@@ -144,6 +144,11 @@ jobs:
               f.write(new_html)
           print("OK: index.html actualizado")
           PYEOF
+      - name: Inyectar API key del asistente
+        env:
+          OPENROUTER_KEY: ${{ secrets.OPENROUTER_KEY }}
+        run: |
+          sed -i "s|OPENROUTER_KEY_PLACEHOLDER|${OPENROUTER_KEY}|g" index.html
 
       - name: Publicar cambios
         run: |
