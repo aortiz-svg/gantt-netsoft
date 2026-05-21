@@ -40,46 +40,59 @@ jobs:
           cid_to_contact = {c["id"]: c for c in contacts}
           print("Contactos netsoft:", len(contacts))
 
-          # PASO 2 — Todos los proyectos dentro de PROYECTOS ACTIVOS usando paginacion
-          FOLDER_ID = "IEAEOUQVI5S3CPQR"
-          all_projects = []
-          next_token = None
+          # PASO 2 — IDs de proyectos principales (IMPLEMENTACION en mayusculas)
+          PROJECT_IDS = [
+              "IEAEOUQVI5RXRDZX",  # GALDISA
+              "IEAEOUQVI5SAB26Z",  # GRUPO PRIMAVERA
+              "IEAEOUQVI5SAB642",  # PANGEA
+              "IEAEOUQVI5SACARB",  # OUTLET
+              "IEAEOUQVI5SADV4O",  # PROMINOX
+              "IEAEOUQVI5SEC2Q4",  # CAJA MORELIA VALLADOLID
+              "IEAEOUQVI5SJBJ76",  # COLIMAN BANANA'S
+              "IEAEOUQVI5TORKSK",  # ARTIMEDICA
+              "MQAAAAECHt5c",      # COLEGIO
+              "MQAAAAECsVy5",      # SHAREWOODS
+              "MQAAAAEC0r61",      # CONTINENTAL MOTORES - HONDURAS
+              "MQAAAAEDESyX",      # CRYOHOLD FASE III
+              "MQAAAAEDHUJB",      # VRM MAQUINARIA
+              "MQAAAAEDUXJm",      # CHENSON
+              "MQAAAAEEOCmE",      # GIANNI'S GROUP
+              "MQAAAAEE9M7X",      # TRACTIAN
+              "MQAAAAEJMg1h",      # EDGEUNO F1
+              "MQAAAAEJ079f",      # NUMARIS
+              "MQAAAAEJ9AjG",      # SOPORTE PINOS
+              "MQAAAAEJ9Bvu",      # DOT LIB
+              "MQAAAAEJ9EmY",      # CONSULTIMER
+              "MQAAAABrhkdi",      # IAS
+          ]
 
-          while True:
-              params = {"pageSize": 200, "project": "true", "fields": '["project","members","customFields"]'}
-              url = "https://www.wrike.com/api/v4/folders/" + FOLDER_ID + "/folders"
-              if next_token:
-                  params["nextPageToken"] = next_token
-              r2 = requests.get(url, headers=headers, params=params)
-              body = r2.json()
-              all_projects.extend(body.get("data", []))
-              next_token = body.get("nextPageToken")
-              if not next_token:
-                  break
+          # PASO 3 — Traer detalle de cada proyecto
+          projects = []
+          chunk_size = 20
+          for i in range(0, len(PROJECT_IDS), chunk_size):
+              chunk = PROJECT_IDS[i:i+chunk_size]
+              ids_str = ",".join(chunk)
+              r2 = requests.get(
+                  "https://www.wrike.com/api/v4/folders/" + ids_str,
+                  headers=headers,
+                  params={"fields": '["project","members","customFields"]'}
+              )
+              print("  HTTP chunk", i//chunk_size+1, ":", r2.status_code)
+              if r2.status_code == 200:
+                  projects.extend(r2.json().get("data", []))
 
-          print("Total folders en PROYECTOS ACTIVOS:", len(all_projects))
+          print("Proyectos con detalle:", len(projects))
 
-          # Filtrar solo los proyectos principales (titulo empieza con IMPLEMENTACI)
-          main_projects = [p for p in all_projects
-                           if p.get("title","").upper().startswith("IMPLEMENTACI")
-                           and p.get("project")
-                           and p["project"].get("startDate")
-                           and p["project"].get("endDate")]
-
-          # Si no hay nada con ese filtro, tomar todos con fechas
-          if not main_projects:
-              main_projects = [p for p in all_projects
-                               if p.get("project")
-                               and p["project"].get("startDate")
-                               and p["project"].get("endDate")]
-
+          # Filtrar activos con fechas
           STATUS_SKIP = ["completed", "cancelled", "onhold"]
-          active = [p for p in main_projects
-                    if p["project"].get("status","").lower() not in STATUS_SKIP]
+          active = [p for p in projects
+                    if p.get("project")
+                    and p["project"].get("startDate")
+                    and p["project"].get("endDate")
+                    and p["project"].get("status","").lower() not in STATUS_SKIP]
+          print("Proyectos activos:", len(active))
 
-          print("Proyectos activos con fechas:", len(active))
-
-          # PASO 3 — Recursos
+          # PASO 4 — Recursos
           owner_ids = set()
           resource_ids = set()
           for p in active:
@@ -93,7 +106,6 @@ jobs:
                       resource_ids.add(mid)
 
           netsoft_resources = [cid_to_contact[rid] for rid in resource_ids if rid in cid_to_contact]
-
           def is_mexico(c):
               tz = c.get("timezone", "")
               return "Mexico" in tz or "America/Mexico" in tz
@@ -113,7 +125,7 @@ jobs:
           final_contacts.sort(key=lambda x: x["name"])
           print("Recursos finales:", len(final_contacts))
 
-          # PASO 4 — Armar datos Gantt
+          # PASO 5 — Armar Gantt
           COLORS = ['#1d4ed8','#0e7490','#0f766e','#1e6b55','#4338ca','#6d28d9','#7c3aed',
                     '#2563eb','#0284c7','#0369a1','#1a6b8a','#164e63','#065f46','#0d5c6e',
                     '#1e40af','#3b5998','#5a2d82','#6b21a8','#374151']
