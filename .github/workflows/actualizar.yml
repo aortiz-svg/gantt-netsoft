@@ -37,31 +37,39 @@ jobs:
                   cid_to_contact[c["id"]] = c
           print("Contactos netsoft:", len(cid_to_contact))
 
-          # Solo Consulting Managers (owners en Wrike), sin PMOs
-          # Actualizado: 2026-05-21
+          # Consulting Managers por proyecto (columna CM de Wrike, actualizado 2026-05-21)
+          # KUAVLK4B  = Carlos Alberto Yañez
+          # KUAU4XSM  = Marco Antonio Guerrero
+          # KUAVLK42  = Miguel Perez Galdino
+          # KUAVKGOD  = Miryam Zoraya Vazquez
+          # KUAUN2EM  = Gustavo Enrique Albornoz
+          # KUAVLSHS  = Carlos Torreblanca
+          # KUAPWMR5  = Ana Laura Sanchez
+          # KUAU4XSD  = César Flores Alvarez
+          # KUAVF4AX  = Miguel Borgo
           PROJECTS = [
-              ("GALDISA",                 "2024-03-19","2026-06-30", ["KUAVK5F5","KUAVLHAS","KUAVLHUK"]),
-              ("GRUPO PRIMAVERA",         "2024-05-14","2026-07-21", ["KUAVJ54C","KUAVNDZZ","KUAVNEQ4"]),
-              ("PANGEA",                  "2024-10-01","2026-07-07", []),
-              ("OUTLET",                  "2024-05-20","2026-08-06", ["KUAVNDZZ","KUAVNFJZ","KUAVNFKQ"]),
-              ("PROMINOX",                "2025-06-10","2026-07-22", ["KUAVOIGD","KUAVOYVV","KUAVJ55W"]),
-              ("CAJA MORELIA VALLADOLID", "2025-06-17","2026-06-12", ["KUAVLRVB","KUAVNDZZ"]),
-              ("COLIMAN BANANA'S",        "2025-06-12","2026-05-20", ["KUAVMGUS","KUAVOIGD"]),
-              ("ARTIMEDICA",              "2025-08-11","2026-06-04", ["KUAVLLN7","KUAVLL5O","KUAVMF42"]),
-              ("COLEGIO",                 "2026-01-05","2026-07-17", ["KUAUN2EM","KUAVLLKU","KUAVOIGD"]),
-              ("SHAREWOODS",              "2025-12-12","2026-07-06", ["KUAVK5F5","KUAVLHUK"]),
-              ("CONTINENTAL MOTORES",     "2025-12-29","2026-07-03", ["KUAVK5D5","KUAVMY3K"]),
-              ("CRYOHOLD FASE III",       "2026-01-08","2026-07-14", ["KUAVLK42","KUAVLLKU","KUAVLLN7","KUAVMGTN","KUAVMGUS","KUAVOH6R","KUAWIWCT","KUAVLHUK"]),
-              ("VRM MAQUINARIA",          "2026-01-09","2026-10-02", ["KUAVJ55W","KUAVNDZZ"]),
-              ("CHENSON",                 "2026-01-14","2027-01-05", ["KUAU4XSD"]),
-              ("GIANNI'S GROUP",          "2026-01-26","2026-08-24", ["KUAUN2EM","KUAVLN6P"]),
-              ("TRACTIAN",                "2026-02-06","2026-07-01", ["KUAPWMR5"]),
-              ("EDGEUNO F1",              "2026-04-17","2026-08-11", ["KUAU4XSM"]),
-              ("NUMARIS",                 "2026-05-14","2026-09-04", []),
-              ("SOPORTE PINOS",           "2026-05-20","2026-09-10", ["KUAU4XSD"]),
-              ("DOT LIB",                 "2026-05-20","2026-09-10", []),
               ("CONSULTIMER",             "2026-05-20","2026-09-10", []),
-              ("IAS",                     "2025-11-03","2027-08-25", []),
+              ("DOT LIB",                 "2026-05-20","2026-09-10", []),
+              ("SOPORTE PINOS",           "2026-05-20","2026-09-10", ["KUAU4XSD"]),
+              ("ARTIMEDICA",              "2025-08-11","2026-06-04", ["KUAVLK4B"]),
+              ("CAJA MORELIA VALLADOLID", "2025-06-17","2026-06-12", ["KUAU4XSM"]),
+              ("CRYOHOLD FASE III",       "2026-01-08","2026-07-14", ["KUAVLK42"]),
+              ("SHAREWOODS",              "2025-12-12","2026-07-06", ["KUAVKGOD"]),
+              ("PROMINOX",                "2025-06-10","2026-07-22", ["KUAUN2EM"]),
+              ("COLEGIO",                 "2026-01-05","2026-07-17", ["KUAUN2EM"]),
+              ("CONTINENTAL MOTORES",     "2025-12-29","2026-07-03", ["KUAVLSHS"]),
+              ("TRACTIAN",                "2026-02-06","2026-07-01", ["KUAPWMR5"]),
+              ("GIANNI'S GROUP",          "2026-01-26","2026-08-24", ["KUAVLK4B"]),
+              ("CHENSON",                 "2026-01-14","2027-01-05", ["KUAU4XSD"]),
+              ("EDGEUNO F1",              "2026-04-17","2026-08-11", ["KUAU4XSM"]),
+              ("VRM MAQUINARIA",          "2026-01-09","2026-10-02", ["KUAPWMR5"]),
+              ("NUMARIS",                 "2026-05-14","2026-09-04", []),
+              ("OUTLET",                  "2024-05-20","2026-08-06", ["KUAVF4AX"]),
+              ("GRUPO PRIMAVERA",         "2024-05-14","2026-07-21", ["KUAVF4AX"]),
+              ("COLIMAN BANANA'S",        "2025-06-12","2026-05-20", ["KUAU4XSM"]),
+              ("GALDISA",                 "2024-03-19","2026-06-30", ["KUAVKGOD"]),
+              ("PANGEA",                  "2024-10-01","2026-07-07", ["KUAPWMR5"]),
+              ("IAS",                     "2025-11-03","2027-08-25", ["KUAVLK4B"]),
           ]
 
           COLORS = ['#1d4ed8','#0e7490','#0f766e','#1e6b55','#4338ca','#6d28d9','#7c3aed',
