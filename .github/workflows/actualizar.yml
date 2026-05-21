@@ -28,90 +28,70 @@ jobs:
           WRIKE_TOKEN = os.environ["WRIKE_TOKEN"]
           headers = {"Authorization": "Bearer " + WRIKE_TOKEN}
 
-          print("Consultando Wrike...")
-
-          # PASO 1 — Contactos @netsoft.com
+          print("Consultando contactos Wrike...")
           r = requests.get("https://www.wrike.com/api/v4/contacts", headers=headers)
           all_contacts = r.json().get("data", [])
-          contacts = [c for c in all_contacts
-                      if not c.get("deleted")
-                      and c.get("type") == "Person"
-                      and "@netsoft.com" in c.get("primaryEmail","")]
-          cid_to_contact = {c["id"]: c for c in contacts}
-          print("Contactos netsoft:", len(contacts))
+          cid_to_contact = {}
+          for c in all_contacts:
+              if not c.get("deleted") and c.get("type") == "Person" and "@netsoft.com" in c.get("primaryEmail",""):
+                  cid_to_contact[c["id"]] = c
+          print("Contactos netsoft:", len(cid_to_contact))
 
-          # PASO 2 — Datos de proyectos (obtenidos via MCP, hardcodeados aqui)
-          # owners = Consulting Manager (GERENTE), shareds relevantes = equipo del proyecto
-          # Formato: (nombre, startDate, endDate, [owner_ids], [shared_ids_relevantes])
-          CM_FIELD = "IEAEOUQVJUAIICGU"  # custom field "Consulting Manager"
-          PMO_FIELD = "IEAEOUQVJUAIICGV"  # custom field "PMO"
-
-          PROJECT_IDS = [
-              "IEAEOUQVI5RXRDZX","IEAEOUQVI5SAB26Z","IEAEOUQVI5SAB642","IEAEOUQVI5SACARB",
-              "IEAEOUQVI5SADV4O","IEAEOUQVI5SEC2Q4","IEAEOUQVI5SJBJ76","IEAEOUQVI5TORKSK",
-              "MQAAAAECHt5c","MQAAAAECsVy5","MQAAAAEC0r61","MQAAAAEDESyX",
-              "MQAAAAEDHUJB","MQAAAAEDUXJm","MQAAAAEEOCmE","MQAAAAEE9M7X",
-              "MQAAAAEJMg1h","MQAAAAEJ079f","MQAAAAEJ9AjG","MQAAAAEJ9Bvu",
-              "MQAAAAEJ9EmY","MQAAAABrhkdi"
+          # Datos de proyectos hardcodeados (fuente: Wrike MCP, actualizados 2026-05-21)
+          # formato: (nombre_corto, start, end, [consulting_manager_ids], [assignee_ids])
+          PROJECTS = [
+              ("GALDISA",                      "2024-03-19","2026-06-30", ["KUAVK5F5","KUAVLHAS","KUAVLHUK"], ["KUAVJK27"]),
+              ("GRUPO PRIMAVERA",              "2024-05-14","2026-07-21", ["KUAVJ54C","KUAVNDZZ","KUAVNEQ4"], ["KUAVF4AX","KUAPWM4L"]),
+              ("PANGEA",                       "2024-10-01","2026-07-07", [],                                  ["KUAPWMR5","KUAVJKUT"]),
+              ("OUTLET",                       "2024-05-20","2026-08-06", ["KUAVNDZZ","KUAVNFJZ","KUAVNFKQ"], ["KUAVF4AX","KUAVJKUT"]),
+              ("PROMINOX",                     "2025-06-10","2026-07-22", ["KUAVOIGD","KUAVOYVV","KUAVJ55W"], ["KUAUN2EM","KUAPWM4L"]),
+              ("CAJA MORELIA VALLADOLID",      "2025-06-17","2026-06-12", ["KUAVLRVB","KUAVNDZZ"],            ["KUAU4XSM","KUAU2SMC"]),
+              ("COLIMAN BANANA'S",             "2025-06-12","2026-05-20", ["KUAVMGUS","KUAVOIGD"],            ["KUAU4XSM","KUAVJKUT"]),
+              ("ARTIMEDICA",                   "2025-08-11","2026-06-04", ["KUAVLLN7","KUAVLL5O","KUAVMF42"], ["KUAVLK4B","KUAVJKUT"]),
+              ("COLEGIO",                      "2026-01-05","2026-07-17", ["KUAVJKUF","KUAUN2EM","KUAVLLKU","KUAVOIGD"], ["KUAVJKUF","KUAUN2EM"]),
+              ("SHAREWOODS",                   "2025-12-12","2026-07-06", ["KUAVK5F5","KUAVLHUK"],            ["KUAVKGOD","KUAVNFGF"]),
+              ("CONTINENTAL MOTORES",          "2025-12-29","2026-07-03", ["KUAVK5D5","KUAVMY3K"],            ["KUAVLSHS","KUAVLHFS"]),
+              ("CRYOHOLD FASE III",            "2026-01-08","2026-07-14", ["KUAVLHFG","KUAVLHFS","KUAVLK42","KUAVLLKU","KUAVLLN7"], ["KUAVLK42","KUAVLHFS"]),
+              ("VRM MAQUINARIA",               "2026-01-09","2026-10-02", ["KUAVJ55W","KUAVNDZZ"],            ["KUAPWMR5","KUAU2SMC"]),
+              ("CHENSON",                      "2026-01-14","2027-01-05", ["KUAVJKUT","KUAVNFJZ","KUAVOX2S","KUAVLL5O"], ["KUAU4XSD","KUAVJKUT"]),
+              ("GIANNI'S GROUP",               "2026-01-26","2026-08-24", ["KUAUN2EM","KUAVLN6P"],            ["KUAVLK4B","KUAVLHFG"]),
+              ("TRACTIAN",                     "2026-02-06","2026-07-01", ["KUAVLLN7","KUAVLL5O","KUAVMF42"], ["KUAPWMR5","KUAPWM4L"]),
+              ("EDGEUNO F1",                   "2026-04-17","2026-08-11", ["KUAVNFGF","KUAVJKUT"],            ["KUAU4XSM","KUAVNFGF"]),
+              ("NUMARIS",                      "2026-05-14","2026-09-04", ["KUAPWM4L"],                       ["KUAPWM4L"]),
+              ("SOPORTE PINOS",                "2026-05-20","2026-09-10", ["KUAVJKUT"],                       ["KUAVJKUT"]),
+              ("DOT LIB",                      "2026-05-20","2026-09-10", ["KUAVJKUT"],                       ["KUAVJKUT"]),
+              ("CONSULTIMER",                  "2026-05-20","2026-09-10", ["KUAVJKUT"],                       ["KUAVJKUT"]),
+              ("IAS",                          "2025-11-03","2027-08-25", [],                                  ["KUAVJKUT"]),
           ]
 
-          # Consultar uno por uno (evita el 400 de multiples IDs)
-          projects_data = []
-          for pid in PROJECT_IDS:
-              r2 = requests.get(
-                  "https://www.wrike.com/api/v4/folders/" + pid,
-                  headers=headers,
-                  params={"fields": '["project","customFields"]'}
-              )
-              if r2.status_code == 200:
-                  data = r2.json().get("data", [])
-                  if data:
-                      projects_data.append(data[0])
+          COLORS = ['#1d4ed8','#0e7490','#0f766e','#1e6b55','#4338ca','#6d28d9','#7c3aed',
+                    '#2563eb','#0284c7','#0369a1','#1a6b8a','#164e63','#065f46','#0d5c6e',
+                    '#1e40af','#3b5998','#5a2d82','#6b21a8','#374151']
 
-          print("Proyectos obtenidos:", len(projects_data))
-
-          STATUS_SKIP = ["completed","cancelled","onhold","Delivered: FollowUp"]
-          active = []
-          for p in projects_data:
-              proj = p.get("project", {})
-              status = proj.get("customStatusId","")
-              if proj.get("startDate") and proj.get("endDate"):
-                  active.append(p)
-
-          print("Proyectos con fechas:", len(active))
-
-          # PASO 3 — Extraer owners y consulting managers por custom field
+          # Armar recursos únicos
           owner_ids = set()
           resource_ids = set()
-
-          for p in active:
-              proj = p.get("project", {})
-              # owners nativos
-              for o in proj.get("owners", []):
-                  oid = o.get("id","") if isinstance(o, dict) else o
+          for _, _, _, owners, members in PROJECTS:
+              for oid in owners:
                   owner_ids.add(oid)
                   resource_ids.add(oid)
-              # custom field Consulting Manager
-              for cf in p.get("customFields", []):
-                  if cf.get("id") in (CM_FIELD, PMO_FIELD) and cf.get("value"):
-                      for vid in cf["value"].split(","):
-                          vid = vid.strip()
-                          if vid:
-                              resource_ids.add(vid)
-                              if cf.get("id") == CM_FIELD:
-                                  owner_ids.add(vid)
-
-          netsoft_resources = [cid_to_contact[rid] for rid in resource_ids if rid in cid_to_contact]
+              for mid in members:
+                  resource_ids.add(mid)
 
           def is_mexico(c):
               tz = c.get("timezone","")
               return "Mexico" in tz or "America/Mexico" in tz
 
-          mx = [c for c in netsoft_resources if is_mexico(c)]
-          final_resource_list = mx if len(mx) >= 5 else netsoft_resources
+          netsoft = [cid_to_contact[rid] for rid in resource_ids if rid in cid_to_contact]
+          mx = [c for c in netsoft if is_mexico(c)]
+          final_resource_list = mx if len(mx) >= 5 else netsoft
 
           final_contacts = []
+          seen_ids = set()
           for c in final_resource_list:
+              if c["id"] in seen_ids:
+                  continue
+              seen_ids.add(c["id"])
               name = (c.get("firstName","") + " " + c.get("lastName","")).upper().strip()
               if name:
                   final_contacts.append({
@@ -120,32 +100,8 @@ jobs:
                       "role": "GERENTE" if c["id"] in owner_ids else "CONSULTOR"
                   })
           final_contacts.sort(key=lambda x: x["name"])
-          print("Recursos finales:", len(final_contacts))
-
-          COLORS = ['#1d4ed8','#0e7490','#0f766e','#1e6b55','#4338ca','#6d28d9','#7c3aed',
-                    '#2563eb','#0284c7','#0369a1','#1a6b8a','#164e63','#065f46','#0d5c6e',
-                    '#1e40af','#3b5998','#5a2d82','#6b21a8','#374151']
-
-          final_projects = []
-          for i, p in enumerate(active[:25]):
-              proj = p.get("project", {})
-              name = p["title"].replace("IMPLEMENTACIÓN ","").replace("Implementación ","")
-              p_owner_ids = [o.get("id","") if isinstance(o,dict) else o for o in proj.get("owners",[])]
-              # tambien agregar CM del custom field
-              for cf in p.get("customFields",[]):
-                  if cf.get("id") == CM_FIELD and cf.get("value"):
-                      for vid in cf["value"].split(","):
-                          vid = vid.strip()
-                          if vid and vid not in p_owner_ids:
-                              p_owner_ids.append(vid)
-              final_projects.append({
-                  "name": name,
-                  "start": proj.get("startDate","2025-01-01"),
-                  "end": proj.get("endDate","2026-12-31"),
-                  "color": COLORS[i % len(COLORS)],
-                  "owner_ids": p_owner_ids,
-                  "member_ids": []
-              })
+          print("Recursos:", len(final_contacts))
+          print("Proyectos:", len(PROJECTS))
 
           cid_to_idx = {c["id"]: i for i, c in enumerate(final_contacts)}
 
@@ -156,17 +112,21 @@ jobs:
               res_lines.append("    ['" + name + "','" + c["role"] + "','" + color + "']")
 
           proj_lines = []
-          for p in final_projects:
-              name = p["name"].replace("'","\\'")
-              proj_lines.append("    ['" + name + "','" + p["start"] + "','" + p["end"] + "','" + p["color"] + "']")
+          for i, (name, start, end, _, _) in enumerate(PROJECTS):
+              pname = name.replace("'","\\'")
+              proj_lines.append("    ['" + pname + "','" + start + "','" + end + "','" + COLORS[i % len(COLORS)] + "']")
 
           assign_lines = []
-          for pi, p in enumerate(final_projects):
+          for pi, (_, start, end, owners, members) in enumerate(PROJECTS):
               added = set()
-              for oid in p["owner_ids"]:
+              for oid in owners:
                   if oid in cid_to_idx and oid not in added:
-                      assign_lines.append("    [" + str(cid_to_idx[oid]) + "," + str(pi) + ",'" + p["start"] + "','" + p["end"] + "',50]")
+                      assign_lines.append("    [" + str(cid_to_idx[oid]) + "," + str(pi) + ",'" + start + "','" + end + "',50]")
                       added.add(oid)
+              for mid in members:
+                  if mid in cid_to_idx and mid not in added:
+                      assign_lines.append("    [" + str(cid_to_idx[mid]) + "," + str(pi) + ",'" + start + "','" + end + "',50]")
+                      added.add(mid)
 
           today = datetime.now().strftime("%B %Y")
 
@@ -197,7 +157,7 @@ jobs:
           with open("index.html","w",encoding="utf-8") as f:
               f.write(new_html)
 
-          print("OK: " + str(len(final_contacts)) + " recursos, " + str(len(final_projects)) + " proyectos")
+          print("OK: index.html actualizado")
           PYEOF
 
       - name: Publicar cambios
