@@ -37,46 +37,40 @@ jobs:
                   cid_to_contact[c["id"]] = c
           print("Contactos netsoft:", len(cid_to_contact))
 
-          # Datos de proyectos hardcodeados (fuente: Wrike MCP, actualizados 2026-05-21)
-          # formato: (nombre_corto, start, end, [consulting_manager_ids], [assignee_ids])
+          # Solo Consulting Managers por proyecto (sin PMOs)
           PROJECTS = [
-              ("GALDISA",                      "2024-03-19","2026-06-30", ["KUAVK5F5","KUAVLHAS","KUAVLHUK"], ["KUAVJK27"]),
-              ("GRUPO PRIMAVERA",              "2024-05-14","2026-07-21", ["KUAVJ54C","KUAVNDZZ","KUAVNEQ4"], ["KUAVF4AX","KUAPWM4L"]),
-              ("PANGEA",                       "2024-10-01","2026-07-07", [],                                  ["KUAPWMR5","KUAVJKUT"]),
-              ("OUTLET",                       "2024-05-20","2026-08-06", ["KUAVNDZZ","KUAVNFJZ","KUAVNFKQ"], ["KUAVF4AX","KUAVJKUT"]),
-              ("PROMINOX",                     "2025-06-10","2026-07-22", ["KUAVOIGD","KUAVOYVV","KUAVJ55W"], ["KUAUN2EM","KUAPWM4L"]),
-              ("CAJA MORELIA VALLADOLID",      "2025-06-17","2026-06-12", ["KUAVLRVB","KUAVNDZZ"],            ["KUAU4XSM","KUAU2SMC"]),
-              ("COLIMAN BANANA'S",             "2025-06-12","2026-05-20", ["KUAVMGUS","KUAVOIGD"],            ["KUAU4XSM","KUAVJKUT"]),
-              ("ARTIMEDICA",                   "2025-08-11","2026-06-04", ["KUAVLLN7","KUAVLL5O","KUAVMF42"], ["KUAVLK4B","KUAVJKUT"]),
-              ("COLEGIO",                      "2026-01-05","2026-07-17", ["KUAVJKUF","KUAUN2EM","KUAVLLKU","KUAVOIGD"], ["KUAVJKUF","KUAUN2EM"]),
-              ("SHAREWOODS",                   "2025-12-12","2026-07-06", ["KUAVK5F5","KUAVLHUK"],            ["KUAVKGOD","KUAVNFGF"]),
-              ("CONTINENTAL MOTORES",          "2025-12-29","2026-07-03", ["KUAVK5D5","KUAVMY3K"],            ["KUAVLSHS","KUAVLHFS"]),
-              ("CRYOHOLD FASE III",            "2026-01-08","2026-07-14", ["KUAVLHFG","KUAVLHFS","KUAVLK42","KUAVLLKU","KUAVLLN7"], ["KUAVLK42","KUAVLHFS"]),
-              ("VRM MAQUINARIA",               "2026-01-09","2026-10-02", ["KUAVJ55W","KUAVNDZZ"],            ["KUAPWMR5","KUAU2SMC"]),
-              ("CHENSON",                      "2026-01-14","2027-01-05", ["KUAVJKUT","KUAVNFJZ","KUAVOX2S","KUAVLL5O"], ["KUAU4XSD","KUAVJKUT"]),
-              ("GIANNI'S GROUP",               "2026-01-26","2026-08-24", ["KUAUN2EM","KUAVLN6P"],            ["KUAVLK4B","KUAVLHFG"]),
-              ("TRACTIAN",                     "2026-02-06","2026-07-01", ["KUAVLLN7","KUAVLL5O","KUAVMF42"], ["KUAPWMR5","KUAPWM4L"]),
-              ("EDGEUNO F1",                   "2026-04-17","2026-08-11", ["KUAVNFGF","KUAVJKUT"],            ["KUAU4XSM","KUAVNFGF"]),
-              ("NUMARIS",                      "2026-05-14","2026-09-04", ["KUAPWM4L"],                       ["KUAPWM4L"]),
-              ("SOPORTE PINOS",                "2026-05-20","2026-09-10", ["KUAVJKUT"],                       ["KUAVJKUT"]),
-              ("DOT LIB",                      "2026-05-20","2026-09-10", ["KUAVJKUT"],                       ["KUAVJKUT"]),
-              ("CONSULTIMER",                  "2026-05-20","2026-09-10", ["KUAVJKUT"],                       ["KUAVJKUT"]),
-              ("IAS",                          "2025-11-03","2027-08-25", [],                                  ["KUAVJKUT"]),
+              ("GALDISA",                 "2024-03-19","2026-06-30", ["KUAVK5F5","KUAVLHAS","KUAVLHUK"]),
+              ("GRUPO PRIMAVERA",         "2024-05-14","2026-07-21", ["KUAVJ54C","KUAVNDZZ","KUAVNEQ4"]),
+              ("PANGEA",                  "2024-10-01","2026-07-07", []),
+              ("OUTLET",                  "2024-05-20","2026-08-06", ["KUAVNDZZ","KUAVNFJZ","KUAVNFKQ"]),
+              ("PROMINOX",                "2025-06-10","2026-07-22", ["KUAVOIGD","KUAVOYVV","KUAVJ55W"]),
+              ("CAJA MORELIA VALLADOLID", "2025-06-17","2026-06-12", ["KUAVLRVB","KUAVNDZZ"]),
+              ("COLIMAN BANANA'S",        "2025-06-12","2026-05-20", ["KUAVMGUS","KUAVOIGD"]),
+              ("ARTIMEDICA",              "2025-08-11","2026-06-04", ["KUAVLLN7","KUAVLL5O","KUAVMF42"]),
+              ("COLEGIO",                 "2026-01-05","2026-07-17", ["KUAVJKUF","KUAUN2EM","KUAVLLKU","KUAVOIGD"]),
+              ("SHAREWOODS",              "2025-12-12","2026-07-06", ["KUAVK5F5","KUAVLHUK"]),
+              ("CONTINENTAL MOTORES",     "2025-12-29","2026-07-03", ["KUAVK5D5","KUAVMY3K"]),
+              ("CRYOHOLD FASE III",       "2026-01-08","2026-07-14", ["KUAVLHFG","KUAVLHFS","KUAVLK42","KUAVLLKU","KUAVLLN7"]),
+              ("VRM MAQUINARIA",          "2026-01-09","2026-10-02", ["KUAVJ55W","KUAVNDZZ"]),
+              ("CHENSON",                 "2026-01-14","2027-01-05", ["KUAVJKUT","KUAVNFJZ","KUAVOX2S","KUAVLL5O"]),
+              ("GIANNI'S GROUP",          "2026-01-26","2026-08-24", ["KUAUN2EM","KUAVLN6P"]),
+              ("TRACTIAN",                "2026-02-06","2026-07-01", ["KUAVLLN7","KUAVLL5O","KUAVMF42"]),
+              ("EDGEUNO F1",              "2026-04-17","2026-08-11", ["KUAVNFGF","KUAVJKUT"]),
+              ("NUMARIS",                 "2026-05-14","2026-09-04", ["KUAPWM4L"]),
+              ("SOPORTE PINOS",           "2026-05-20","2026-09-10", ["KUAVJKUT"]),
+              ("DOT LIB",                 "2026-05-20","2026-09-10", ["KUAVJKUT"]),
+              ("CONSULTIMER",             "2026-05-20","2026-09-10", ["KUAVJKUT"]),
+              ("IAS",                     "2025-11-03","2027-08-25", []),
           ]
 
           COLORS = ['#1d4ed8','#0e7490','#0f766e','#1e6b55','#4338ca','#6d28d9','#7c3aed',
                     '#2563eb','#0284c7','#0369a1','#1a6b8a','#164e63','#065f46','#0d5c6e',
                     '#1e40af','#3b5998','#5a2d82','#6b21a8','#374151']
 
-          # Armar recursos únicos
-          owner_ids = set()
           resource_ids = set()
-          for _, _, _, owners, members in PROJECTS:
+          for _, _, _, owners in PROJECTS:
               for oid in owners:
-                  owner_ids.add(oid)
                   resource_ids.add(oid)
-              for mid in members:
-                  resource_ids.add(mid)
 
           def is_mexico(c):
               tz = c.get("timezone","")
@@ -94,11 +88,7 @@ jobs:
               seen_ids.add(c["id"])
               name = (c.get("firstName","") + " " + c.get("lastName","")).upper().strip()
               if name:
-                  final_contacts.append({
-                      "id": c["id"],
-                      "name": name,
-                      "role": "GERENTE" if c["id"] in owner_ids else "CONSULTOR"
-                  })
+                  final_contacts.append({"id": c["id"], "name": name, "role": "GERENTE"})
           final_contacts.sort(key=lambda x: x["name"])
           print("Recursos:", len(final_contacts))
           print("Proyectos:", len(PROJECTS))
@@ -107,26 +97,21 @@ jobs:
 
           res_lines = []
           for c in final_contacts:
-              color = "#1a3354" if c["role"] == "GERENTE" else "#2563eb"
               name = c["name"].replace("'","\\'")
-              res_lines.append("    ['" + name + "','" + c["role"] + "','" + color + "']")
+              res_lines.append("    ['" + name + "','GERENTE','#1a3354']")
 
           proj_lines = []
-          for i, (name, start, end, _, _) in enumerate(PROJECTS):
+          for i, (name, start, end, _) in enumerate(PROJECTS):
               pname = name.replace("'","\\'")
               proj_lines.append("    ['" + pname + "','" + start + "','" + end + "','" + COLORS[i % len(COLORS)] + "']")
 
           assign_lines = []
-          for pi, (_, start, end, owners, members) in enumerate(PROJECTS):
+          for pi, (_, start, end, owners) in enumerate(PROJECTS):
               added = set()
               for oid in owners:
                   if oid in cid_to_idx and oid not in added:
                       assign_lines.append("    [" + str(cid_to_idx[oid]) + "," + str(pi) + ",'" + start + "','" + end + "',50]")
                       added.add(oid)
-              for mid in members:
-                  if mid in cid_to_idx and mid not in added:
-                      assign_lines.append("    [" + str(cid_to_idx[mid]) + "," + str(pi) + ",'" + start + "','" + end + "',50]")
-                      added.add(mid)
 
           today = datetime.now().strftime("%B %Y")
 
