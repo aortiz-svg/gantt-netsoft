@@ -37,21 +37,11 @@ jobs:
                   cid_to_contact[c["id"]] = c
           print("Contactos netsoft:", len(cid_to_contact))
 
-          # IDs de PMOs — excluir del Gantt
           PMO_IDS = {
-              "KUAVJK27",  # Michel Mundo
-              "KUAVJKUT",  # Mirza Amezcua
-              "KUAPWM4L",  # Juan Pablo Lagunes
-              "KUAVNFGF",  # Yanina Silva
-              "KUAVLHFS",  # Karla Ruiz
-              "KUAVJKUF",  # Andrea Vega
-              "KUAU2SMC",  # Diana Huicochea
-              "KUAVLHFG",  # Valeria Chavero
+              "KUAVJK27","KUAVJKUT","KUAPWM4L","KUAVNFGF",
+              "KUAVLHFS","KUAVJKUF","KUAU2SMC","KUAVLHFG",
           }
 
-          # CM = Consulting Manager (aparece primero, rol GERENTE)
-          # Assignees = columna Assignee en Wrike (rol CONSULTOR), sin PMOs
-          # formato: (nombre, start, end, [cm_ids], [assignee_ids sin PMOs])
           PROJECTS = [
               ("CONSULTIMER",             "2026-05-20","2026-09-10", [],           []),
               ("DOT LIB",                 "2026-05-20","2026-09-10", [],           []),
@@ -65,7 +55,7 @@ jobs:
               ("CONTINENTAL MOTORES",     "2025-12-29","2026-07-03", ["KUAVLSHS"], ["KUAVK5D5","KUAVMY3K"]),
               ("TRACTIAN",                "2026-02-06","2026-07-01", ["KUAPWMR5"], ["KUAVLLN7","KUAVLL5O","KUAVMF42"]),
               ("GIANNI'S GROUP",          "2026-01-26","2026-08-24", ["KUAVLK4B"], ["KUAUN2EM","KUAVLN6P"]),
-              ("CHENSON",                 "2026-01-14","2027-01-05", ["KUAU4XSD"], ["KUAVJKUT_SKIP","KUAVNFJZ","KUAVOX2S","KUAVLL5O"]),
+              ("CHENSON",                 "2026-01-14","2027-01-05", ["KUAU4XSD"], ["KUAVNFJZ","KUAVOX2S","KUAVLL5O"]),
               ("EDGEUNO F1",              "2026-04-17","2026-08-11", ["KUAU4XSM"], ["KUAYCV67"]),
               ("VRM MAQUINARIA",          "2026-01-09","2026-10-02", ["KUAPWMR5"], ["KUAVJ55W","KUAVNDZZ"]),
               ("NUMARIS",                 "2026-05-14","2026-09-04", [],           []),
@@ -81,7 +71,6 @@ jobs:
                     '#2563eb','#0284c7','#0369a1','#1a6b8a','#164e63','#065f46','#0d5c6e',
                     '#1e40af','#3b5998','#5a2d82','#6b21a8','#374151']
 
-          # Armar recursos únicos, excluyendo PMOs
           cm_ids = set()
           resource_ids = set()
           for _, _, _, cms, assignees in PROJECTS:
@@ -93,25 +82,19 @@ jobs:
                   if aid not in PMO_IDS:
                       resource_ids.add(aid)
 
-          def is_mexico(c):
-              tz = c.get("timezone","")
-              return "Mexico" in tz or "America/Mexico" in tz
-
-          netsoft = [cid_to_contact[rid] for rid in resource_ids if rid in cid_to_contact]
-          mx = [c for c in netsoft if is_mexico(c)]
-          final_resource_list = mx if len(mx) >= 5 else netsoft
-
+          # Sin filtro de timezone — solo filtramos por @netsoft.com
           final_contacts = []
           seen_ids = set()
-          for c in final_resource_list:
-              if c["id"] in seen_ids:
+          for rid in resource_ids:
+              if rid not in cid_to_contact or rid in seen_ids:
                   continue
-              seen_ids.add(c["id"])
+              seen_ids.add(rid)
+              c = cid_to_contact[rid]
               name = (c.get("firstName","") + " " + c.get("lastName","")).upper().strip()
               if name:
-                  role = "GERENTE" if c["id"] in cm_ids else "CONSULTOR"
+                  role  = "GERENTE" if rid in cm_ids else "CONSULTOR"
                   color = "#1a3354" if role == "GERENTE" else "#2563eb"
-                  final_contacts.append({"id": c["id"], "name": name, "role": role, "color": color})
+                  final_contacts.append({"id": rid, "name": name, "role": role, "color": color})
           final_contacts.sort(key=lambda x: x["name"])
           print("Recursos:", len(final_contacts))
           print("Proyectos:", len(PROJECTS))
