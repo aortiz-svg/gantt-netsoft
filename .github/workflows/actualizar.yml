@@ -44,7 +44,11 @@ jobs:
 
           # Traer todos los folders (endpoint que sí funciona con este token)
           print("Consultando folders...")
-          r2 = requests.get("https://www.wrike.com/api/v4/folders", headers=headers)
+          r2 = requests.get(
+              "https://www.wrike.com/api/v4/folders",
+              headers=headers,
+              params={"fields": '["customFields","project"]'}
+          )
           print("HTTP folders:", r2.status_code)
           all_folders = r2.json().get("data", [])
           print("Total folders:", len(all_folders))
