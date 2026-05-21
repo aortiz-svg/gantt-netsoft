@@ -37,49 +37,61 @@ jobs:
                   cid_to_contact[c["id"]] = c
           print("Contactos netsoft:", len(cid_to_contact))
 
-          # Consulting Managers por proyecto (columna CM de Wrike, actualizado 2026-05-21)
-          # KUAVLK4B  = Carlos Alberto Yañez
-          # KUAU4XSM  = Marco Antonio Guerrero
-          # KUAVLK42  = Miguel Perez Galdino
-          # KUAVKGOD  = Miryam Zoraya Vazquez
-          # KUAUN2EM  = Gustavo Enrique Albornoz
-          # KUAVLSHS  = Carlos Torreblanca
-          # KUAPWMR5  = Ana Laura Sanchez
-          # KUAU4XSD  = César Flores Alvarez
-          # KUAVF4AX  = Miguel Borgo
+          # IDs de PMOs — excluir del Gantt
+          PMO_IDS = {
+              "KUAVJK27",  # Michel Mundo
+              "KUAVJKUT",  # Mirza Amezcua
+              "KUAPWM4L",  # Juan Pablo Lagunes
+              "KUAVNFGF",  # Yanina Silva
+              "KUAVLHFS",  # Karla Ruiz
+              "KUAVJKUF",  # Andrea Vega
+              "KUAU2SMC",  # Diana Huicochea
+              "KUAVLHFG",  # Valeria Chavero
+          }
+
+          # CM = Consulting Manager (aparece primero, rol GERENTE)
+          # Assignees = columna Assignee en Wrike (rol CONSULTOR), sin PMOs
+          # formato: (nombre, start, end, [cm_ids], [assignee_ids sin PMOs])
           PROJECTS = [
-              ("CONSULTIMER",             "2026-05-20","2026-09-10", []),
-              ("DOT LIB",                 "2026-05-20","2026-09-10", []),
-              ("SOPORTE PINOS",           "2026-05-20","2026-09-10", ["KUAU4XSD"]),
-              ("ARTIMEDICA",              "2025-08-11","2026-06-04", ["KUAVLK4B"]),
-              ("CAJA MORELIA VALLADOLID", "2025-06-17","2026-06-12", ["KUAU4XSM"]),
-              ("CRYOHOLD FASE III",       "2026-01-08","2026-07-14", ["KUAVLK42"]),
-              ("SHAREWOODS",              "2025-12-12","2026-07-06", ["KUAVKGOD"]),
-              ("PROMINOX",                "2025-06-10","2026-07-22", ["KUAUN2EM"]),
-              ("COLEGIO",                 "2026-01-05","2026-07-17", ["KUAUN2EM"]),
-              ("CONTINENTAL MOTORES",     "2025-12-29","2026-07-03", ["KUAVLSHS"]),
-              ("TRACTIAN",                "2026-02-06","2026-07-01", ["KUAPWMR5"]),
-              ("GIANNI'S GROUP",          "2026-01-26","2026-08-24", ["KUAVLK4B"]),
-              ("CHENSON",                 "2026-01-14","2027-01-05", ["KUAU4XSD"]),
-              ("EDGEUNO F1",              "2026-04-17","2026-08-11", ["KUAU4XSM"]),
-              ("VRM MAQUINARIA",          "2026-01-09","2026-10-02", ["KUAPWMR5"]),
-              ("NUMARIS",                 "2026-05-14","2026-09-04", []),
-              ("OUTLET",                  "2024-05-20","2026-08-06", ["KUAVF4AX"]),
-              ("GRUPO PRIMAVERA",         "2024-05-14","2026-07-21", ["KUAVF4AX"]),
-              ("COLIMAN BANANA'S",        "2025-06-12","2026-05-20", ["KUAU4XSM"]),
-              ("GALDISA",                 "2024-03-19","2026-06-30", ["KUAVKGOD"]),
-              ("PANGEA",                  "2024-10-01","2026-07-07", ["KUAPWMR5"]),
-              ("IAS",                     "2025-11-03","2027-08-25", ["KUAVLK4B"]),
+              ("CONSULTIMER",             "2026-05-20","2026-09-10", [],           []),
+              ("DOT LIB",                 "2026-05-20","2026-09-10", [],           []),
+              ("SOPORTE PINOS",           "2026-05-20","2026-09-10", ["KUAU4XSD"], []),
+              ("ARTIMEDICA",              "2025-08-11","2026-06-04", ["KUAVLK4B"], ["KUAVLLN7","KUAVLL5O","KUAVMF42"]),
+              ("CAJA MORELIA VALLADOLID", "2025-06-17","2026-06-12", ["KUAU4XSM"], ["KUAVLRVB","KUAVNDZZ"]),
+              ("CRYOHOLD FASE III",       "2026-01-08","2026-07-14", ["KUAVLK42"], ["KUAVLLKU","KUAVLLN7","KUAVMGTN","KUAVMGUS","KUAVOH6R","KUAWIWCT","KUAVLHUK"]),
+              ("SHAREWOODS",              "2025-12-12","2026-07-06", ["KUAVKGOD"], ["KUAVK5F5","KUAVLHUK"]),
+              ("PROMINOX",                "2025-06-10","2026-07-22", ["KUAUN2EM"], ["KUAVOIGD","KUAVOYVV","KUAVJ55W"]),
+              ("COLEGIO",                 "2026-01-05","2026-07-17", ["KUAUN2EM"], ["KUAVLLKU","KUAVOIGD"]),
+              ("CONTINENTAL MOTORES",     "2025-12-29","2026-07-03", ["KUAVLSHS"], ["KUAVK5D5","KUAVMY3K"]),
+              ("TRACTIAN",                "2026-02-06","2026-07-01", ["KUAPWMR5"], ["KUAVLLN7","KUAVLL5O","KUAVMF42"]),
+              ("GIANNI'S GROUP",          "2026-01-26","2026-08-24", ["KUAVLK4B"], ["KUAUN2EM","KUAVLN6P"]),
+              ("CHENSON",                 "2026-01-14","2027-01-05", ["KUAU4XSD"], ["KUAVJKUT_SKIP","KUAVNFJZ","KUAVOX2S","KUAVLL5O"]),
+              ("EDGEUNO F1",              "2026-04-17","2026-08-11", ["KUAU4XSM"], ["KUAYCV67"]),
+              ("VRM MAQUINARIA",          "2026-01-09","2026-10-02", ["KUAPWMR5"], ["KUAVJ55W","KUAVNDZZ"]),
+              ("NUMARIS",                 "2026-05-14","2026-09-04", [],           []),
+              ("OUTLET",                  "2024-05-20","2026-08-06", ["KUAVF4AX"], ["KUAVNDZZ","KUAVNFJZ","KUAVNFKQ"]),
+              ("GRUPO PRIMAVERA",         "2024-05-14","2026-07-21", ["KUAVF4AX"], ["KUAVJ54C","KUAVNDZZ","KUAVNEQ4"]),
+              ("COLIMAN BANANA'S",        "2025-06-12","2026-05-20", ["KUAU4XSM"], ["KUAVMGUS","KUAVOIGD"]),
+              ("GALDISA",                 "2024-03-19","2026-06-30", ["KUAVKGOD"], ["KUAVK5F5","KUAVLHAS","KUAVLHUK"]),
+              ("PANGEA",                  "2024-10-01","2026-07-07", ["KUAPWMR5"], []),
+              ("IAS",                     "2025-11-03","2027-08-25", ["KUAVLK4B"], []),
           ]
 
           COLORS = ['#1d4ed8','#0e7490','#0f766e','#1e6b55','#4338ca','#6d28d9','#7c3aed',
                     '#2563eb','#0284c7','#0369a1','#1a6b8a','#164e63','#065f46','#0d5c6e',
                     '#1e40af','#3b5998','#5a2d82','#6b21a8','#374151']
 
+          # Armar recursos únicos, excluyendo PMOs
+          cm_ids = set()
           resource_ids = set()
-          for _, _, _, owners in PROJECTS:
-              for oid in owners:
-                  resource_ids.add(oid)
+          for _, _, _, cms, assignees in PROJECTS:
+              for cid in cms:
+                  if cid not in PMO_IDS:
+                      cm_ids.add(cid)
+                      resource_ids.add(cid)
+              for aid in assignees:
+                  if aid not in PMO_IDS:
+                      resource_ids.add(aid)
 
           def is_mexico(c):
               tz = c.get("timezone","")
@@ -97,7 +109,9 @@ jobs:
               seen_ids.add(c["id"])
               name = (c.get("firstName","") + " " + c.get("lastName","")).upper().strip()
               if name:
-                  final_contacts.append({"id": c["id"], "name": name, "role": "GERENTE"})
+                  role = "GERENTE" if c["id"] in cm_ids else "CONSULTOR"
+                  color = "#1a3354" if role == "GERENTE" else "#2563eb"
+                  final_contacts.append({"id": c["id"], "name": name, "role": role, "color": color})
           final_contacts.sort(key=lambda x: x["name"])
           print("Recursos:", len(final_contacts))
           print("Proyectos:", len(PROJECTS))
@@ -107,20 +121,21 @@ jobs:
           res_lines = []
           for c in final_contacts:
               name = c["name"].replace("'","\\'")
-              res_lines.append("    ['" + name + "','GERENTE','#1a3354']")
+              res_lines.append("    ['" + name + "','" + c["role"] + "','" + c["color"] + "']")
 
           proj_lines = []
-          for i, (name, start, end, _) in enumerate(PROJECTS):
+          for i, (name, start, end, _, _) in enumerate(PROJECTS):
               pname = name.replace("'","\\'")
               proj_lines.append("    ['" + pname + "','" + start + "','" + end + "','" + COLORS[i % len(COLORS)] + "']")
 
           assign_lines = []
-          for pi, (_, start, end, owners) in enumerate(PROJECTS):
+          for pi, (_, start, end, cms, assignees) in enumerate(PROJECTS):
               added = set()
-              for oid in owners:
-                  if oid in cid_to_idx and oid not in added:
-                      assign_lines.append("    [" + str(cid_to_idx[oid]) + "," + str(pi) + ",'" + start + "','" + end + "',50]")
-                      added.add(oid)
+              for oid in cms + assignees:
+                  if oid in PMO_IDS or oid not in cid_to_idx or oid in added:
+                      continue
+                  assign_lines.append("    [" + str(cid_to_idx[oid]) + "," + str(pi) + ",'" + start + "','" + end + "',50]")
+                  added.add(oid)
 
           today = datetime.now().strftime("%B %Y")
 
