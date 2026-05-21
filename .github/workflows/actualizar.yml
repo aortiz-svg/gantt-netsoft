@@ -22,7 +22,7 @@ jobs:
           WRIKE_TOKEN: ${{ secrets.WRIKE_TOKEN }}
         run: |
           python3 - << 'PYEOF'
-          import os, requests, re, json
+          import os, requests, re
           from datetime import datetime
 
           WRIKE_TOKEN = os.environ["WRIKE_TOKEN"]
@@ -40,74 +40,71 @@ jobs:
           cid_to_contact = {c["id"]: c for c in contacts}
           print("Contactos netsoft:", len(contacts))
 
-          # PASO 2 — IDs de proyectos principales (IMPLEMENTACION en mayusculas)
+          # PASO 2 — Datos de proyectos (obtenidos via MCP, hardcodeados aqui)
+          # owners = Consulting Manager (GERENTE), shareds relevantes = equipo del proyecto
+          # Formato: (nombre, startDate, endDate, [owner_ids], [shared_ids_relevantes])
+          CM_FIELD = "IEAEOUQVJUAIICGU"  # custom field "Consulting Manager"
+          PMO_FIELD = "IEAEOUQVJUAIICGV"  # custom field "PMO"
+
           PROJECT_IDS = [
-              "IEAEOUQVI5RXRDZX",  # GALDISA
-              "IEAEOUQVI5SAB26Z",  # GRUPO PRIMAVERA
-              "IEAEOUQVI5SAB642",  # PANGEA
-              "IEAEOUQVI5SACARB",  # OUTLET
-              "IEAEOUQVI5SADV4O",  # PROMINOX
-              "IEAEOUQVI5SEC2Q4",  # CAJA MORELIA VALLADOLID
-              "IEAEOUQVI5SJBJ76",  # COLIMAN BANANA'S
-              "IEAEOUQVI5TORKSK",  # ARTIMEDICA
-              "MQAAAAECHt5c",      # COLEGIO
-              "MQAAAAECsVy5",      # SHAREWOODS
-              "MQAAAAEC0r61",      # CONTINENTAL MOTORES - HONDURAS
-              "MQAAAAEDESyX",      # CRYOHOLD FASE III
-              "MQAAAAEDHUJB",      # VRM MAQUINARIA
-              "MQAAAAEDUXJm",      # CHENSON
-              "MQAAAAEEOCmE",      # GIANNI'S GROUP
-              "MQAAAAEE9M7X",      # TRACTIAN
-              "MQAAAAEJMg1h",      # EDGEUNO F1
-              "MQAAAAEJ079f",      # NUMARIS
-              "MQAAAAEJ9AjG",      # SOPORTE PINOS
-              "MQAAAAEJ9Bvu",      # DOT LIB
-              "MQAAAAEJ9EmY",      # CONSULTIMER
-              "MQAAAABrhkdi",      # IAS
+              "IEAEOUQVI5RXRDZX","IEAEOUQVI5SAB26Z","IEAEOUQVI5SAB642","IEAEOUQVI5SACARB",
+              "IEAEOUQVI5SADV4O","IEAEOUQVI5SEC2Q4","IEAEOUQVI5SJBJ76","IEAEOUQVI5TORKSK",
+              "MQAAAAECHt5c","MQAAAAECsVy5","MQAAAAEC0r61","MQAAAAEDESyX",
+              "MQAAAAEDHUJB","MQAAAAEDUXJm","MQAAAAEEOCmE","MQAAAAEE9M7X",
+              "MQAAAAEJMg1h","MQAAAAEJ079f","MQAAAAEJ9AjG","MQAAAAEJ9Bvu",
+              "MQAAAAEJ9EmY","MQAAAABrhkdi"
           ]
 
-          # PASO 3 — Traer detalle de cada proyecto
-          projects = []
-          chunk_size = 20
-          for i in range(0, len(PROJECT_IDS), chunk_size):
-              chunk = PROJECT_IDS[i:i+chunk_size]
-              ids_str = ",".join(chunk)
+          # Consultar uno por uno (evita el 400 de multiples IDs)
+          projects_data = []
+          for pid in PROJECT_IDS:
               r2 = requests.get(
-                  "https://www.wrike.com/api/v4/folders/" + ids_str,
+                  "https://www.wrike.com/api/v4/folders/" + pid,
                   headers=headers,
-                  params={"fields": '["project","members","customFields"]'}
+                  params={"fields": '["project","customFields"]'}
               )
-              print("  HTTP chunk", i//chunk_size+1, ":", r2.status_code)
               if r2.status_code == 200:
-                  projects.extend(r2.json().get("data", []))
+                  data = r2.json().get("data", [])
+                  if data:
+                      projects_data.append(data[0])
 
-          print("Proyectos con detalle:", len(projects))
+          print("Proyectos obtenidos:", len(projects_data))
 
-          # Filtrar activos con fechas
-          STATUS_SKIP = ["completed", "cancelled", "onhold"]
-          active = [p for p in projects
-                    if p.get("project")
-                    and p["project"].get("startDate")
-                    and p["project"].get("endDate")
-                    and p["project"].get("status","").lower() not in STATUS_SKIP]
-          print("Proyectos activos:", len(active))
+          STATUS_SKIP = ["completed","cancelled","onhold","Delivered: FollowUp"]
+          active = []
+          for p in projects_data:
+              proj = p.get("project", {})
+              status = proj.get("customStatusId","")
+              if proj.get("startDate") and proj.get("endDate"):
+                  active.append(p)
 
-          # PASO 4 — Recursos
+          print("Proyectos con fechas:", len(active))
+
+          # PASO 3 — Extraer owners y consulting managers por custom field
           owner_ids = set()
           resource_ids = set()
+
           for p in active:
               proj = p.get("project", {})
-              for oid in proj.get("ownerIds", []):
+              # owners nativos
+              for o in proj.get("owners", []):
+                  oid = o.get("id","") if isinstance(o, dict) else o
                   owner_ids.add(oid)
                   resource_ids.add(oid)
-              for m in p.get("members", []):
-                  mid = m if isinstance(m, str) else m.get("id", "")
-                  if mid:
-                      resource_ids.add(mid)
+              # custom field Consulting Manager
+              for cf in p.get("customFields", []):
+                  if cf.get("id") in (CM_FIELD, PMO_FIELD) and cf.get("value"):
+                      for vid in cf["value"].split(","):
+                          vid = vid.strip()
+                          if vid:
+                              resource_ids.add(vid)
+                              if cf.get("id") == CM_FIELD:
+                                  owner_ids.add(vid)
 
           netsoft_resources = [cid_to_contact[rid] for rid in resource_ids if rid in cid_to_contact]
+
           def is_mexico(c):
-              tz = c.get("timezone", "")
+              tz = c.get("timezone","")
               return "Mexico" in tz or "America/Mexico" in tz
 
           mx = [c for c in netsoft_resources if is_mexico(c)]
@@ -125,7 +122,6 @@ jobs:
           final_contacts.sort(key=lambda x: x["name"])
           print("Recursos finales:", len(final_contacts))
 
-          # PASO 5 — Armar Gantt
           COLORS = ['#1d4ed8','#0e7490','#0f766e','#1e6b55','#4338ca','#6d28d9','#7c3aed',
                     '#2563eb','#0284c7','#0369a1','#1a6b8a','#164e63','#065f46','#0d5c6e',
                     '#1e40af','#3b5998','#5a2d82','#6b21a8','#374151']
@@ -134,13 +130,21 @@ jobs:
           for i, p in enumerate(active[:25]):
               proj = p.get("project", {})
               name = p["title"].replace("IMPLEMENTACIÓN ","").replace("Implementación ","")
+              p_owner_ids = [o.get("id","") if isinstance(o,dict) else o for o in proj.get("owners",[])]
+              # tambien agregar CM del custom field
+              for cf in p.get("customFields",[]):
+                  if cf.get("id") == CM_FIELD and cf.get("value"):
+                      for vid in cf["value"].split(","):
+                          vid = vid.strip()
+                          if vid and vid not in p_owner_ids:
+                              p_owner_ids.append(vid)
               final_projects.append({
                   "name": name,
                   "start": proj.get("startDate","2025-01-01"),
                   "end": proj.get("endDate","2026-12-31"),
                   "color": COLORS[i % len(COLORS)],
-                  "owner_ids": proj.get("ownerIds",[]),
-                  "member_ids": [m if isinstance(m,str) else m.get("id","") for m in p.get("members",[])]
+                  "owner_ids": p_owner_ids,
+                  "member_ids": []
               })
 
           cid_to_idx = {c["id"]: i for i, c in enumerate(final_contacts)}
@@ -148,12 +152,12 @@ jobs:
           res_lines = []
           for c in final_contacts:
               color = "#1a3354" if c["role"] == "GERENTE" else "#2563eb"
-              name = c["name"].replace("'", "\\'")
+              name = c["name"].replace("'","\\'")
               res_lines.append("    ['" + name + "','" + c["role"] + "','" + color + "']")
 
           proj_lines = []
           for p in final_projects:
-              name = p["name"].replace("'", "\\'")
+              name = p["name"].replace("'","\\'")
               proj_lines.append("    ['" + name + "','" + p["start"] + "','" + p["end"] + "','" + p["color"] + "']")
 
           assign_lines = []
@@ -163,10 +167,6 @@ jobs:
                   if oid in cid_to_idx and oid not in added:
                       assign_lines.append("    [" + str(cid_to_idx[oid]) + "," + str(pi) + ",'" + p["start"] + "','" + p["end"] + "',50]")
                       added.add(oid)
-              for mid in p["member_ids"]:
-                  if mid in cid_to_idx and mid not in added:
-                      assign_lines.append("    [" + str(cid_to_idx[mid]) + "," + str(pi) + ",'" + p["start"] + "','" + p["end"] + "',50]")
-                      added.add(mid)
 
           today = datetime.now().strftime("%B %Y")
 
@@ -179,30 +179,25 @@ jobs:
           new_init += "  PROJ.forEach(([n,s,e,color])=>addProj(n,s,e,color));\n"
           new_init += "  const A=[\n" + ",\n".join(assign_lines) + "\n  ];\n"
           new_init += "  A.forEach(([ri,pi,s,e,pct])=>addAssign(resources[ri].id,projects[pi].id,s,e,pct));\n"
-          new_init += "  render();\n"
-          new_init += "}\n"
-          new_init += "init();\n"
-          new_init += "// GANTT_DATA_END"
+          new_init += "  render();\n}\n"
+          new_init += "init();\n// GANTT_DATA_END"
 
           with open("index.html","r",encoding="utf-8") as f:
               html = f.read()
 
-          MARKER_START = "// GANTT_DATA_START"
-          MARKER_END   = "// GANTT_DATA_END"
-          start = html.find(MARKER_START)
-          end   = html.find(MARKER_END)
-
-          if start == -1 or end == -1:
-              print("ERROR: No se encontraron los marcadores en el HTML")
+          s = html.find("// GANTT_DATA_START")
+          e = html.find("// GANTT_DATA_END")
+          if s == -1 or e == -1:
+              print("ERROR: marcadores no encontrados")
               exit(1)
 
-          new_html = html[:start] + new_init + html[end + len(MARKER_END):]
+          new_html = html[:s] + new_init + html[e + len("// GANTT_DATA_END"):]
           new_html = re.sub(r'Datos Wrike · [^<"]+', 'Datos Wrike · ' + today, new_html)
 
           with open("index.html","w",encoding="utf-8") as f:
               f.write(new_html)
 
-          print("OK: " + str(len(final_contacts)) + " recursos, " + str(len(final_projects)) + " proyectos escritos en index.html")
+          print("OK: " + str(len(final_contacts)) + " recursos, " + str(len(final_projects)) + " proyectos")
           PYEOF
 
       - name: Publicar cambios
