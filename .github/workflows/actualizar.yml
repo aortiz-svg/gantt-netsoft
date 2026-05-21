@@ -27,25 +27,17 @@ jobs:
           WRIKE_TOKEN = os.environ["WRIKE_TOKEN"]
           headers = {"Authorization": "Bearer " + WRIKE_TOKEN}
 
-          # Ver spaces disponibles
-          r = requests.get("https://www.wrike.com/api/v4/spaces", headers=headers)
-          print("HTTP spaces:", r.status_code)
-          spaces = r.json().get("data", [])
-          print("Spaces encontrados:", len(spaces))
-          for s in spaces:
-              print("  Space:", s.get("title"), "| ID:", s.get("id"))
+          SPACE_ID = "IEAEOUQVI5RISQI5"
 
-          # Por cada space, ver sus folders raíz
-          for s in spaces[:3]:
-              sid = s.get("id")
-              rf = requests.get(
-                  "https://www.wrike.com/api/v4/spaces/" + sid + "/folders",
-                  headers=headers
-              )
-              print("\nFolders en space '" + s.get("title","") + "' (HTTP " + str(rf.status_code) + "):")
-              folders = rf.json().get("data", [])
-              for f in folders[:10]:
-                  print("  ", f.get("title"), "| ID:", f.get("id"), "| childIds:", len(f.get("childIds",[])))
+          r = requests.get(
+              "https://www.wrike.com/api/v4/spaces/" + SPACE_ID + "/folders",
+              headers=headers
+          )
+          print("HTTP:", r.status_code)
+          folders = r.json().get("data", [])
+          print("Folders en Proyectos Implementacion:", len(folders))
+          for f in folders:
+              print("  ", f.get("title"), "| ID:", f.get("id"), "| childIds:", len(f.get("childIds",[])))
 
           PYEOF
 
