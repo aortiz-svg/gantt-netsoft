@@ -33,11 +33,14 @@ jobs:
               "https://www.wrike.com/api/v4/spaces/" + SPACE_ID + "/folders",
               headers=headers
           )
-          print("HTTP:", r.status_code)
           folders = r.json().get("data", [])
-          print("Folders en Proyectos Implementacion:", len(folders))
+
+          # Buscar PROYECTOS ACTIVOS y folders con muchos hijos
+          print("=== Folders con childIds > 5 ===")
           for f in folders:
-              print("  ", f.get("title"), "| ID:", f.get("id"), "| childIds:", len(f.get("childIds",[])))
+              n_children = len(f.get("childIds",[]))
+              if n_children > 5 or "ACTIVO" in f.get("title","").upper() or "PROYECTO" in f.get("title","").upper():
+                  print("  ", f.get("title"), "| ID:", f.get("id"), "| childIds:", n_children)
 
           PYEOF
 
