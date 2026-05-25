@@ -155,7 +155,7 @@ body.bar-resizing *{cursor:ew-resize!important;user-select:none!important}
     <button onclick="showModal('delProj')">&#8722; Proyecto</button>
     <button onclick="showModal('delAssign')">&#8722; Asignación</button>
     <div class="sep"></div>
-    <span id="syncInfo">🔄 Datos Wrike · May 2026</span>
+    <span id="syncInfo">Actualizado: May 2026</span>
   </div>
 </div>
 
@@ -189,6 +189,7 @@ body.bar-resizing *{cursor:ew-resize!important;user-select:none!important}
 
 <div class="tooltip" id="tooltip" style="display:none"></div>
 <div id="dragHint"></div>
+<div id="modalBg" style="display:none" class="modal-bg" onclick="if(event.target===this)closeModal()"><div id="modalBox" class="modal"></div></div>
 
 <script>
 // ── DATA ──────────────────────────────────────────────────────────────────────
@@ -650,8 +651,6 @@ function init(){
     [24,17,'2026-04-17','2026-08-11',50],
     [12,17,'2026-04-17','2026-08-11',50],
     [17,17,'2026-04-17','2026-08-11',50],
-    [34,18,'2026-05-14','2026-09-04',50],
-    [16,18,'2026-05-14','2026-09-04',50],
     [7,19,'2026-06-29','2026-10-21',50],
     [19,19,'2026-06-29','2026-10-21',50],
     [12,19,'2026-06-29','2026-10-21',50],
