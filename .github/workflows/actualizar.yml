@@ -64,7 +64,7 @@ jobs:
               ("GIANNI'S GROUP",          "2026-01-26","2026-08-24", ["KUAVLK4B"],     ["KUAUN2EM","KUAVLN6P"]),
               ("TRACTIAN",                "2026-02-06","2026-07-01", ["KUAPWMR5"],     ["KUAWISKD"]),
               ("EDGEUNO F1",              "2026-04-17","2026-08-11", ["KUAU4XSM"],     ["KUAVLN6P","KUAYCV67"]),
-              ("NUMARIS",                 "2026-05-14","2026-09-04", [],               []),
+              ("NUMARIS",                 "2026-05-14","2026-09-04", [],               ["KUAVLHUK","KUAVK5F5"]),
               ("SOPORTE PINOS",           "2026-06-29","2026-10-21", ["KUAU4XSD"],     ["KUAVLL5O","KUAVLN6P","KUAVOH6R","KUAVOX2S"]),
               ("DOT LIB",                 "2026-05-20","2026-09-10", [],               []),
               ("CONSULTIMER",             "2026-05-20","2026-09-10", [],               []),
